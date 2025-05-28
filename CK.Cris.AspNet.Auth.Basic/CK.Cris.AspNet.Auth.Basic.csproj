@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Description>Implements IBasicLoginCommand, IRefreshAuthenticationCommand and ILogoutCommand using the WebFrontAuthService.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.AspNet.Auth" Version="26.1.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.Cris.Auth" Version="0.0.0--05fifyn-explo" />
+    <PackageReference Include="CK.IO.Auth.Basic" Version="0.0.0--05fifyn-explo" />
+  </ItemGroup>
+</Project>

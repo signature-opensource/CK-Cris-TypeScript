@@ -1,0 +1,8 @@
+<RepositoryInfo>
+  <SimpleGitVersion StartingVersion="v0.39.0">
+    <Branches>
+      <Branch Name="develop" CIVersionMode="LastReleaseBased" VersionName="develop" />
+      <Branch Name="explo" CIVersionMode="ZeroTimed" VersionName="explo" />
+    </Branches>
+  </SimpleGitVersion>
+</RepositoryInfo>

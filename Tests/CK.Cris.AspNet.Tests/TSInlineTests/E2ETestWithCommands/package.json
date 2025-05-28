@@ -1,0 +1,23 @@
+{
+  "name": "e2etestwithcommands",
+  "private": true,
+  "packageManager": "yarn@4.8.1",
+  "scripts": {
+    "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Debug/net8.0/CK.TypeScript.LiveEngine.dll\"",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.15.19",
+    "@yarnpkg/sdks": "^3.2.1",
+    "axios": "^1.9",
+    "jest": "^29.7",
+    "jest-environment-jsdom": "^29.7",
+    "ts-jest": "^29.3.4",
+    "typescript": "=5.4.5"
+  },
+  "ckVersion": 1,
+  "peerDependencies": {
+    "axios": "^1.9"
+  }
+}

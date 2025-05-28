@@ -1,0 +1,103 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32616.157
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{CED4973A-F35D-4D85-B2A4-081D7E8E98E6}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		.gitignore = .gitignore
+		appveyor.yml = appveyor.yml
+		Directory.Build.props = Directory.Build.props
+		NuGet.config = NuGet.config
+		RepositoryInfo.xml = RepositoryInfo.xml
+		Common\SharedKey.snk = Common\SharedKey.snk
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{4D3EF9AD-5153-461D-8538-F321B6EF7121}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeCakeBuilder", "CodeCakeBuilder\CodeCakeBuilder.csproj", "{FD4817B6-3CD7-4E74-AA10-7CA95FDFCF2D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Cris.AspNet", "CK.Cris.AspNet\CK.Cris.AspNet.csproj", "{1CC24AE9-995C-42AD-9AD7-B37971D70431}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Cris.AspNet.Engine", "CK.Cris.AspNet.Engine\CK.Cris.AspNet.Engine.csproj", "{084EA455-90B4-450E-9072-91CE5591B236}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Cris.AspNet.Tests", "Tests\CK.Cris.AspNet.Tests\CK.Cris.AspNet.Tests.csproj", "{9626283D-CAC7-4B78-94AA-86441AA3DBDA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Cris.TypeScript", "CK.Cris.TypeScript\CK.Cris.TypeScript.csproj", "{6B18E6D0-47C3-472D-B0B4-9D49B91368F9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{0525F8A8-6C51-4A5A-80E2-0F3A96FD7515}"
+	ProjectSection(SolutionItems) = preProject
+		Documentation\Abstractions.png = Documentation\Abstractions.png
+		Documentation\AuthenticatedCommands.png = Documentation\AuthenticatedCommands.png
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Cris.HttpSender.Tests", "Tests\CK.Cris.HttpSender.Tests\CK.Cris.HttpSender.Tests.csproj", "{464E027C-C5A1-4061-8472-1F45D99802E3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Cris.AspNet.Auth.Basic", "CK.Cris.AspNet.Auth.Basic\CK.Cris.AspNet.Auth.Basic.csproj", "{F7243676-9603-4D94-B655-61C084FEABD7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Ng.Cris.AspNet", "CK.Ng.Cris.AspNet\CK.Ng.Cris.AspNet.csproj", "{7D7C907F-E1A2-44C1-B087-A53A23210EBB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Ng.Cris.AspNet.Auth", "CK.Ng.Cris.AspNet.Auth\CK.Ng.Cris.AspNet.Auth.csproj", "{9E4D0A5D-80FA-4A09-AEDF-72164665CFE7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Ng.Cris.AspNet.Auth.Tests", "Tests\CK.Ng.Cris.AspNet.Auth.Tests\CK.Ng.Cris.AspNet.Auth.Tests.csproj", "{F744B0D2-8C99-4E99-960A-45E152F1701B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FD4817B6-3CD7-4E74-AA10-7CA95FDFCF2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD4817B6-3CD7-4E74-AA10-7CA95FDFCF2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD4817B6-3CD7-4E74-AA10-7CA95FDFCF2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD4817B6-3CD7-4E74-AA10-7CA95FDFCF2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1CC24AE9-995C-42AD-9AD7-B37971D70431}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1CC24AE9-995C-42AD-9AD7-B37971D70431}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1CC24AE9-995C-42AD-9AD7-B37971D70431}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1CC24AE9-995C-42AD-9AD7-B37971D70431}.Release|Any CPU.Build.0 = Release|Any CPU
+		{084EA455-90B4-450E-9072-91CE5591B236}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{084EA455-90B4-450E-9072-91CE5591B236}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{084EA455-90B4-450E-9072-91CE5591B236}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{084EA455-90B4-450E-9072-91CE5591B236}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9626283D-CAC7-4B78-94AA-86441AA3DBDA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9626283D-CAC7-4B78-94AA-86441AA3DBDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9626283D-CAC7-4B78-94AA-86441AA3DBDA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9626283D-CAC7-4B78-94AA-86441AA3DBDA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B18E6D0-47C3-472D-B0B4-9D49B91368F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B18E6D0-47C3-472D-B0B4-9D49B91368F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B18E6D0-47C3-472D-B0B4-9D49B91368F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B18E6D0-47C3-472D-B0B4-9D49B91368F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{464E027C-C5A1-4061-8472-1F45D99802E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{464E027C-C5A1-4061-8472-1F45D99802E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{464E027C-C5A1-4061-8472-1F45D99802E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{464E027C-C5A1-4061-8472-1F45D99802E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7243676-9603-4D94-B655-61C084FEABD7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F7243676-9603-4D94-B655-61C084FEABD7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7243676-9603-4D94-B655-61C084FEABD7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F7243676-9603-4D94-B655-61C084FEABD7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D7C907F-E1A2-44C1-B087-A53A23210EBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D7C907F-E1A2-44C1-B087-A53A23210EBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D7C907F-E1A2-44C1-B087-A53A23210EBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D7C907F-E1A2-44C1-B087-A53A23210EBB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E4D0A5D-80FA-4A09-AEDF-72164665CFE7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E4D0A5D-80FA-4A09-AEDF-72164665CFE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E4D0A5D-80FA-4A09-AEDF-72164665CFE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E4D0A5D-80FA-4A09-AEDF-72164665CFE7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F744B0D2-8C99-4E99-960A-45E152F1701B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F744B0D2-8C99-4E99-960A-45E152F1701B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F744B0D2-8C99-4E99-960A-45E152F1701B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F744B0D2-8C99-4E99-960A-45E152F1701B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9626283D-CAC7-4B78-94AA-86441AA3DBDA} = {4D3EF9AD-5153-461D-8538-F321B6EF7121}
+		{0525F8A8-6C51-4A5A-80E2-0F3A96FD7515} = {CED4973A-F35D-4D85-B2A4-081D7E8E98E6}
+		{464E027C-C5A1-4061-8472-1F45D99802E3} = {4D3EF9AD-5153-461D-8538-F321B6EF7121}
+		{F744B0D2-8C99-4E99-960A-45E152F1701B} = {4D3EF9AD-5153-461D-8538-F321B6EF7121}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {228BD9A5-6AA5-4F89-A2AE-FCE153B1FC03}
+	EndGlobalSection
+EndGlobal

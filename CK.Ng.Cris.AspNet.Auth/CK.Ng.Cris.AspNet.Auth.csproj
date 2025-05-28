@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.TS.AspNet.Auth" Version="0.0.0--05fi8dr-explo" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CK.Ng.Cris.AspNet\CK.Ng.Cris.AspNet.csproj" />
+  </ItemGroup>
+</Project>

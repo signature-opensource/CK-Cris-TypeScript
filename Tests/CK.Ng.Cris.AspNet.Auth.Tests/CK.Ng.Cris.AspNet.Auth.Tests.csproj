@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.AppIdentity.Hosting" Version="0.9.0" />
+    <PackageReference Include="CK.Testing.TypeScriptEngine" Version="0.0.0--05fi8dr-explo" />
+    <PackageReference Include="CK.Testing.Nunit" Version="12.1.0" />
+    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="26.1.0" />
+    <PackageReference Include="CK.TS.Angular.Engine" Version="0.0.0--05fi8dr-explo" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.Cris.Auth" Version="0.0.0--05fifyn-explo" />
+    <PackageReference Include="CK.IO.Auth.Basic" Version="0.0.0--05fifyn-explo" />
+    <ProjectReference Include="..\..\CK.Ng.Cris.AspNet.Auth\CK.Ng.Cris.AspNet.Auth.csproj" />
+    <ProjectReference Include="..\..\CK.Cris.AspNet.Engine\CK.Cris.AspNet.Engine.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="TSInlineTests\" />
+  </ItemGroup>
+</Project>

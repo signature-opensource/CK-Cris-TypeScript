@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <description>
+      This package extends the IPoco typescript code for ICommand Poco by adding their CommandModel.
+
+      The CK/Cris/Model.ts defines the CommandModel and ICrisEndpoint interfaces.
+    </description>
+  </PropertyGroup>
+  <!--
+         The CK.TypeScript package contains few types: the TypeScriptAttribute (with Folder, FileName,
+         TypeName, SameFolderAs and SameFileAs properties) and the TypeScriptAspectConfiguration
+         objects, but it depends on another micro-package: the CK.Poco.Exc.Json that generates Json serialization.
+
+         The CK.TypeScript.Engine is the one that does the job (it triggers TypeScript generation only when the TypeScriptAspect is
+         declared and a <TypeScript TargetOutuptPath="">...</TypeScript> is defined in the BinPathConfiguration).
+
+        For components registration, we must ensure that this CK.Cris.TypeScript.dll keeps a reference to the CK.TypeScript.dll.
+        This is the goal of the [assembly: CK.Core.PreserveAssemblyReference( typeof( CK.TypeScript.TypeScriptAttribute ) )]
+        in AssemblyInfo.cs.
+    -->
+  <ItemGroup>
+    <PackageReference Include="CK.TypeScript" Version="0.0.0--05fi8dr-explo" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.Cris" Version="0.0.0--05fifyn-explo" />
+  </ItemGroup>
+</Project>
