@@ -24,8 +24,8 @@
         packages.
     -->
   <ItemGroup>
-    <PackageReference Include="CK.TypeScript" Version="0.0.0--05fljr2-explo" />
     <PackageReference Include="CK.Cris" Version="0.0.0--05fifyn-explo" />
+    <PackageReference Include="CK.TypeScript" Version="0.0.0--05flr91-explo" />
   </ItemGroup>
 
     <ItemGroup>
