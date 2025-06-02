@@ -5,7 +5,7 @@
           Inputs="$(MSBuildAllProjects)"
           Outputs="$(IntermediateOutputPath)CK.Cris.TypeScript.AutoAttributes.g.cs">
     <PropertyGroup>
-      <GeneratedFilePath>$(IntermediateOutputPath)CKCK.Cris.TypeScript.AutoAttributes.g.cs</GeneratedFilePath>
+      <GeneratedFilePath>$(IntermediateOutputPath)CK.Cris.TypeScript.AutoAttributes.g.cs</GeneratedFilePath>
     </PropertyGroup>
     <ItemGroup>
       <Compile Include="$(GeneratedFilePath)" />
