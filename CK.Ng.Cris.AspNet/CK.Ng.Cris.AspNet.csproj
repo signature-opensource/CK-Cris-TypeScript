@@ -3,7 +3,7 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Ng.Axios" Version="0.0.0--05fp9uw-explo" />
+    <PackageReference Include="CK.Ng.Axios" Version="0.0.0--05fqrxz-explo" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Cris.AspNet\CK.Cris.AspNet.csproj" />
