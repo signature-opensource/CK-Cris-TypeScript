@@ -5300,7 +5300,7 @@ __metadata:
     jest: "npm:^29.7"
     jest-environment-jsdom: "npm:^29.7"
     jest-preset-angular: "npm:^14.5.4"
-    jest-util: "npm:^30.0.0"
+    jest-util: "npm:^30"
     luxon: "npm:^3.5"
     rxjs: "npm:~7.8"
     ts-jest: "npm:^29.2.5"
@@ -8148,7 +8148,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jest-util@npm:^30.0.0":
+"jest-util@npm:^30":
   version: 30.0.0
   resolution: "jest-util@npm:30.0.0"
   dependencies:
