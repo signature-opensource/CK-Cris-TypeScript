@@ -13,7 +13,7 @@ export function provideNgCrisAspNetAuthSupport(): EnvironmentProviders {
     ]);
 }
 
-export function updateAmbientValuesOnAuthChange(): void {
+function updateAmbientValuesOnAuthChange(): void {
     const a = inject( AuthService );
     const h = inject( HttpCrisEndpoint );
 

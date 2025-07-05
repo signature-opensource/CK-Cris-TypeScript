@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <IsPackable>false</IsPackable>
@@ -17,9 +17,9 @@
     <PackageReference Include="CK.Cris.Executor.Engine" Version="0.0.0--05fifyn-explo" />
     <PackageReference Include="CK.Cris.HttpSender" Version="0.0.0--05fifyn-explo" />
     <!-- This project tests Basic login and DelayedCommand. -->
-    <ProjectReference Include="../../CK.Cris.AspNet.Auth.Basic/CK.Cris.AspNet.Auth.Basic.csproj" />
     <PackageReference Include="CK.Cris.Auth" Version="0.0.0--05fifyn-explo" />
     <PackageReference Include="CK.Cris.DelayedCommand" Version="0.0.0--05fifyn-explo" />
+    <ProjectReference Include="../../CK.Cris.AspNet.Auth.Basic/CK.Cris.AspNet.Auth.Basic.csproj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CK.Cris.AspNet.Engine\CK.Cris.AspNet.Engine.csproj" />
