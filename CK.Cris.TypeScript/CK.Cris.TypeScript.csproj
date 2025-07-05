@@ -24,15 +24,13 @@
         packages.
     -->
   <ItemGroup>
-    <PackageReference Include="CK.Cris" Version="0.0.0--05fifyn-explo" />
-    <PackageReference Include="CK.TypeScript" Version="0.0.0--05fwa40-explo" />
+    <PackageReference Include="CK.Cris" Version="0.39.1--0003-develop" />
+    <PackageReference Include="CK.TypeScript" Version="0.26.1--0006-develop" />
   </ItemGroup>
-
-    <ItemGroup>
-        <Content Include="MSBuild/CK.Cris.TypeScript.targets">
-            <Pack>true</Pack>
-            <PackagePath>buildTransitive\CK.Cris.TypeScript.targets</PackagePath>
-        </Content>
-    </ItemGroup>
-
+  <ItemGroup>
+    <Content Include="MSBuild/CK.Cris.TypeScript.targets">
+      <Pack>true</Pack>
+      <PackagePath>buildTransitive\CK.Cris.TypeScript.targets</PackagePath>
+    </Content>
+  </ItemGroup>
 </Project>
