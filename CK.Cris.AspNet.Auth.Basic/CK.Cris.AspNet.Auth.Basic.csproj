@@ -7,7 +7,7 @@
     <PackageReference Include="CK.AspNet.Auth" Version="27.0.2--0003-develop" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Cris.Auth" Version="0.39.1--0007-develop" />
-    <PackageReference Include="CK.IO.Auth.Basic" Version="0.39.1--0007-develop" />
+    <PackageReference Include="CK.Cris.Auth" Version="0.39.2--0001-develop" />
+    <PackageReference Include="CK.IO.Auth.Basic" Version="0.39.2--0001-develop" />
   </ItemGroup>
 </Project>
