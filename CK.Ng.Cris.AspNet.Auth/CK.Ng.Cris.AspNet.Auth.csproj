@@ -3,7 +3,7 @@
     <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.TS.AspNet.Auth" Version="0.26.3--0002-develop" />
+    <PackageReference Include="CK.TS.AspNet.Auth" Version="0.26.3--0004-develop" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Ng.Cris.AspNet\CK.Ng.Cris.AspNet.csproj" />
