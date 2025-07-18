@@ -5,10 +5,10 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CK.AppIdentity.Hosting" Version="0.10.1--0002-develop" />
-    <PackageReference Include="CK.Testing.TypeScriptEngine" Version="0.26.3--0005-develop" />
+    <PackageReference Include="CK.Testing.TypeScriptEngine" Version="0.26.3--0008-develop" />
     <PackageReference Include="CK.Testing.Nunit" Version="13.0.1--0001-develop" />
     <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="27.0.2--0003-develop" />
-    <PackageReference Include="CK.TS.Angular.Engine" Version="0.26.3--0005-develop" />
+    <PackageReference Include="CK.TS.Angular.Engine" Version="0.26.3--0008-develop" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
   </ItemGroup>
