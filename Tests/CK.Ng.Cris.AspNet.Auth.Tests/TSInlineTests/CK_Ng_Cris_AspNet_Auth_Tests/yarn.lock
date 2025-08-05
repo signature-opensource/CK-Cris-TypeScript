@@ -259,6 +259,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@angular/cdk@npm:^19, @angular/cdk@npm:^19.0.0":
+  version: 19.2.19
+  resolution: "@angular/cdk@npm:19.2.19"
+  dependencies:
+    parse5: "npm:^7.1.2"
+    tslib: "npm:^2.3.0"
+  peerDependencies:
+    "@angular/common": ^19.0.0 || ^20.0.0
+    "@angular/core": ^19.0.0 || ^20.0.0
+    rxjs: ^6.5.3 || ^7.4.0
+  checksum: 10c0/bd529b9a2853a3799c4fa90b4910f04ee4459a7b7b7556c544d22db69181a16773f7b2a2586109527fe8b0e17f53dd289e76d7d20aacf7566d85e7b8b3075399
+  languageName: node
+  linkType: hard
+
 "@angular/cli@npm:^19.1.4":
   version: 19.2.14
   resolution: "@angular/cli@npm:19.2.14"
@@ -397,6 +411,39 @@ __metadata:
     "@angular/platform-browser": 19.2.14
     rxjs: ^6.5.3 || ^7.4.0
   checksum: 10c0/e70855ba7a88f6f3a69b6540bfaf34673db7d298ddf573e454c57b6a5e5802555dcc3a44a6d93fa75ca4deb71d2e93e832b82df49b6aed32ab84338a8e1b3526
+  languageName: node
+  linkType: hard
+
+"@ant-design/colors@npm:^7.0.0":
+  version: 7.2.1
+  resolution: "@ant-design/colors@npm:7.2.1"
+  dependencies:
+    "@ant-design/fast-color": "npm:^2.0.6"
+  checksum: 10c0/4748a0bfb1ea98e08e29dcd4f7afd2781ae2119f783e6e9f80e889fd15fc19f7137e2a3d91f26bae2ab1ee76c04d520cc35f2bb0a708cd71e463f4d9deb4192d
+  languageName: node
+  linkType: hard
+
+"@ant-design/fast-color@npm:^2.0.6":
+  version: 2.0.6
+  resolution: "@ant-design/fast-color@npm:2.0.6"
+  dependencies:
+    "@babel/runtime": "npm:^7.24.7"
+  checksum: 10c0/8d30649bd8d4e56d5c48393fcf0ad5c24d1099ec4cbf88f55bd9f4489e61efc30087d301da384c4ed21f2d5597087c8ba27dfbcc7693915310c26d307f5a8276
+  languageName: node
+  linkType: hard
+
+"@ant-design/icons-angular@npm:^19.0.0":
+  version: 19.0.0
+  resolution: "@ant-design/icons-angular@npm:19.0.0"
+  dependencies:
+    "@ant-design/colors": "npm:^7.0.0"
+    tslib: "npm:^2.0.0"
+  peerDependencies:
+    "@angular/common": ^19.0.0
+    "@angular/core": ^19.0.0
+    "@angular/platform-browser": ^19.0.0
+    rxjs: ^6.5.3 || ^7.4.0
+  checksum: 10c0/e3285924042ce436fd9bde093d7502d7e9c24d02a5b6e059a02dda25429ae54fe82708a851f194c28237e46251636f971a00768d6ab9cb0c0d136e2a9994eda7
   languageName: node
   linkType: hard
 
@@ -1764,6 +1811,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@babel/runtime@npm:^7.21.0, @babel/runtime@npm:^7.24.7":
+  version: 7.28.2
+  resolution: "@babel/runtime@npm:7.28.2"
+  checksum: 10c0/c20afe253629d53a405a610b12a62ac74d341a2c1e0fb202bbef0c118f6b5c84f94bf16039f58fd0483dd256901259930a43976845bdeb180cab1f882c21b6e0
+  languageName: node
+  linkType: hard
+
 "@babel/template@npm:^7.26.9, @babel/template@npm:^7.27.1, @babel/template@npm:^7.27.2, @babel/template@npm:^7.3.3":
   version: 7.27.2
   resolution: "@babel/template@npm:7.27.2"
@@ -1804,6 +1858,13 @@ __metadata:
   version: 0.2.3
   resolution: "@bcoe/v8-coverage@npm:0.2.3"
   checksum: 10c0/6b80ae4cb3db53f486da2dc63b6e190a74c8c3cca16bb2733f234a0b6a9382b09b146488ae08e2b22cf00f6c83e20f3e040a2f7894f05c045c946d6a090b1d52
+  languageName: node
+  linkType: hard
+
+"@ctrl/tinycolor@npm:^3.6.0":
+  version: 3.6.1
+  resolution: "@ctrl/tinycolor@npm:3.6.1"
+  checksum: 10c0/444d81612cd8c5c802a3d1253df83d5f77d3db87f351861655683a4743990e6b38976bf2e4129591c5a258607b63574b3c7bed702cf6a0eb7912222edf4570e9
   languageName: node
   linkType: hard
 
@@ -2161,6 +2222,61 @@ __metadata:
   version: 0.25.5
   resolution: "@esbuild/win32-x64@npm:0.25.5"
   conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@fortawesome/angular-fontawesome@npm:^1":
+  version: 1.0.0
+  resolution: "@fortawesome/angular-fontawesome@npm:1.0.0"
+  dependencies:
+    "@fortawesome/fontawesome-svg-core": "npm:^6.7.1"
+    tslib: "npm:^2.8.1"
+  peerDependencies:
+    "@angular/core": ^19.0.0
+  checksum: 10c0/3231ce35848373654719266988b1591a8ae64551fc931f1e2c217b8e644b9af4c5224fead5ebe09d5836b31516f1f2ad5f8a65486d17e6a190d6efd9801da724
+  languageName: node
+  linkType: hard
+
+"@fortawesome/fontawesome-common-types@npm:6.7.2":
+  version: 6.7.2
+  resolution: "@fortawesome/fontawesome-common-types@npm:6.7.2"
+  checksum: 10c0/0785df560542d9c08a0ba07bb7a39902274a3cd65c018672eb2520a99efccce18bdb7f7f4b1c6089763bc5627bf0f0837c3af963a8427eaeb535bd57c820a723
+  languageName: node
+  linkType: hard
+
+"@fortawesome/fontawesome-svg-core@npm:^6, @fortawesome/fontawesome-svg-core@npm:^6.7.1":
+  version: 6.7.2
+  resolution: "@fortawesome/fontawesome-svg-core@npm:6.7.2"
+  dependencies:
+    "@fortawesome/fontawesome-common-types": "npm:6.7.2"
+  checksum: 10c0/9e4e2992b341d2d11cd6ab8cf001e2cb9be4266ce200b307d15c0618e7d2cf11c1c4c67a1f95f3cc70feed2380fa66672132c32078674d5f9cb2cb0b7703f3ac
+  languageName: node
+  linkType: hard
+
+"@fortawesome/free-brands-svg-icons@npm:^6":
+  version: 6.7.2
+  resolution: "@fortawesome/free-brands-svg-icons@npm:6.7.2"
+  dependencies:
+    "@fortawesome/fontawesome-common-types": "npm:6.7.2"
+  checksum: 10c0/054af882f3416d4a04dfe0f8db8f1ac645d07709a019e95368ae796c1aeee5929dfaf023e5568438a600e1bc1496e6e7270659d2be91b50531fdbd724034b22c
+  languageName: node
+  linkType: hard
+
+"@fortawesome/free-regular-svg-icons@npm:^6":
+  version: 6.7.2
+  resolution: "@fortawesome/free-regular-svg-icons@npm:6.7.2"
+  dependencies:
+    "@fortawesome/fontawesome-common-types": "npm:6.7.2"
+  checksum: 10c0/3a334cb0c837170f7b14759ddc8ef2a821b8d2c59b23a7b852d7e3fb16b066dd5fe8649e47bc1ef91764c78a78f51d1c0c8c5b8567e1680eeb21e8afdc70f5f7
+  languageName: node
+  linkType: hard
+
+"@fortawesome/free-solid-svg-icons@npm:^6":
+  version: 6.7.2
+  resolution: "@fortawesome/free-solid-svg-icons@npm:6.7.2"
+  dependencies:
+    "@fortawesome/fontawesome-common-types": "npm:6.7.2"
+  checksum: 10c0/e900f3bb7b7d821421f11439ff78cd2b3c98ca31e848e1afebf7caa578d29a31fb6cf8ef283d4df342de777126a71fcbb154dd395b9d9ab6914a40a86df81413
   languageName: node
   linkType: hard
 
@@ -3083,6 +3199,18 @@ __metadata:
     typescript: ">=5.5 <5.9"
     webpack: ^5.54.0
   checksum: 10c0/6cb4311d9be1432bd1b8e6c656cf436691f6d568419b0ed6c5373140fc13ce656166ae7ca412afec6386b28016bccc3300e379e251f55d21a88b66a2c6cb9d5b
+  languageName: node
+  linkType: hard
+
+"@ngx-translate/core@npm:^16":
+  version: 16.0.4
+  resolution: "@ngx-translate/core@npm:16.0.4"
+  dependencies:
+    tslib: "npm:^2.3.0"
+  peerDependencies:
+    "@angular/common": ">=16"
+    "@angular/core": ">=16"
+  checksum: 10c0/b84839745d04f9f8a0964cc1eeadb54ff77508675dd1e42f2b9b6dd6ccca91177c7905ac2909de90807cd3883ae1967c293b3313592cb76ba566a6c233313e3b
   languageName: node
   linkType: hard
 
@@ -5290,6 +5418,7 @@ __metadata:
   dependencies:
     "@angular-devkit/build-angular": "npm:^19.1.4"
     "@angular/animations": "npm:^19.1"
+    "@angular/cdk": "npm:^19"
     "@angular/cli": "npm:^19.1.4"
     "@angular/common": "npm:^19.1"
     "@angular/compiler": "npm:^19.1"
@@ -5299,6 +5428,12 @@ __metadata:
     "@angular/platform-browser": "npm:^19.1"
     "@angular/platform-browser-dynamic": "npm:^19.1"
     "@angular/router": "npm:^19.1"
+    "@fortawesome/angular-fontawesome": "npm:^1"
+    "@fortawesome/fontawesome-svg-core": "npm:^6"
+    "@fortawesome/free-brands-svg-icons": "npm:^6"
+    "@fortawesome/free-regular-svg-icons": "npm:^6"
+    "@fortawesome/free-solid-svg-icons": "npm:^6"
+    "@ngx-translate/core": "npm:^16"
     "@types/jest": "npm:^29.5.14"
     "@types/luxon": "npm:^3.6.2"
     "@types/node": "npm:^22.10.10"
@@ -5309,6 +5444,7 @@ __metadata:
     jest-preset-angular: "npm:^14.5.4"
     jest-util: "npm:^30.0.5"
     luxon: "npm:^3.5"
+    ng-zorro-antd: "npm:^19"
     rxjs: "npm:~7.8"
     ts-jest: "npm:^29.2.5"
     tslib: "npm:^2.3"
@@ -5734,6 +5870,15 @@ __metadata:
     whatwg-mimetype: "npm:^3.0.0"
     whatwg-url: "npm:^11.0.0"
   checksum: 10c0/051c3aaaf3e961904f136aab095fcf6dff4db23a7fc759dd8ba7b3e6ba03fc07ef608086caad8ab910d864bd3b5e57d0d2f544725653d77c96a2c971567045f4
+  languageName: node
+  linkType: hard
+
+"date-fns@npm:^2.16.1":
+  version: 2.30.0
+  resolution: "date-fns@npm:2.30.0"
+  dependencies:
+    "@babel/runtime": "npm:^7.21.0"
+  checksum: 10c0/e4b521fbf22bc8c3db332bbfb7b094fd3e7627de0259a9d17c7551e2d2702608a7307a449206065916538e384f37b181565447ce2637ae09828427aed9cb5581
   languageName: node
   linkType: hard
 
@@ -9172,6 +9317,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ng-zorro-antd@npm:^19":
+  version: 19.3.1
+  resolution: "ng-zorro-antd@npm:19.3.1"
+  dependencies:
+    "@angular/cdk": "npm:^19.0.0"
+    "@ant-design/icons-angular": "npm:^19.0.0"
+    "@ctrl/tinycolor": "npm:^3.6.0"
+    date-fns: "npm:^2.16.1"
+    tslib: "npm:^2.3.0"
+  peerDependencies:
+    "@angular/animations": ^19.0.0
+    "@angular/common": ^19.0.0
+    "@angular/core": ^19.0.0
+    "@angular/forms": ^19.0.0
+    "@angular/platform-browser": ^19.0.0
+    "@angular/router": ^19.0.0
+  checksum: 10c0/cfbad222d0ccd2b185b5121055186220e720bd17dc1dc4770eec12bff2852bb1b7a043f19546b1bbaaf86b5c523ab98d0b7f4595ebc3b11de25afec7219e1003
+  languageName: node
+  linkType: hard
+
 "node-addon-api@npm:^6.1.0":
   version: 6.1.0
   resolution: "node-addon-api@npm:6.1.0"
@@ -9646,7 +9811,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"parse5@npm:^7.0.0, parse5@npm:^7.1.1":
+"parse5@npm:^7.0.0, parse5@npm:^7.1.1, parse5@npm:^7.1.2":
   version: 7.3.0
   resolution: "parse5@npm:7.3.0"
   dependencies:
@@ -11464,7 +11629,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:2.8.1, tslib@npm:^2.0.0, tslib@npm:^2.1.0, tslib@npm:^2.3, tslib@npm:^2.3.0, tslib@npm:^2.4.0":
+"tslib@npm:2.8.1, tslib@npm:^2.0.0, tslib@npm:^2.1.0, tslib@npm:^2.3, tslib@npm:^2.3.0, tslib@npm:^2.4.0, tslib@npm:^2.8.1":
   version: 2.8.1
   resolution: "tslib@npm:2.8.1"
   checksum: 10c0/9c4759110a19c53f992d9aae23aac5ced636e99887b51b9e61def52611732872ff7668757d4e4c61f19691e36f4da981cd9485e869b4a7408d689f6bf1f14e62

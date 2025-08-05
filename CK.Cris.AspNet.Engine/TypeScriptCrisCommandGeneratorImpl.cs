@@ -47,7 +47,7 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
         // - With the comments.
         //
         // => But this is NOT easy. Postponed for the moment: the AmbientValues is currently exposed
-        // by the CrisEndpoint and this is bad...
+        // as a ___a field by the CrisEndpoint and this is bad...
         //
 
         bool ITSCodeGenerator.StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
@@ -251,9 +251,44 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                 fModel.Body.Append( """
                             export abstract class CommandModel<T extends IAbstractCommand> {
                                 applyAmbientValues( command: T, endpoint: CrisEndpoint ): void {
-                                    this.doApplyAmbientValues( command, endpoint.___a, endpoint.ambientValuesOverride );
+                                    const visited = new Set<{}>();
+                                    this.#doApply( command, endpoint, visited );
                                 };
 
+                                #doApply( command: IAbstractCommand, endpoint: CrisEndpoint, visited: Set<{}> ) : void {
+                                    this.doApplyAmbientValues( command, endpoint.___a, endpoint.ambientValuesOverride );
+                                    for( const key in command ) {
+                                        if( command.hasOwnProperty( key ) ) {
+                                            this.#doApplyAny( (<any>command)[key], endpoint, visited );
+                                        }
+                                    }
+                                }
+
+                                #doApplyAny( obj: any, endpoint: CrisEndpoint, visited: Set<{}> ) : void {
+                                    if ( obj === null
+                                        || obj === undefined
+                                        || typeof obj !== 'object'
+                                        || visited.has( obj ) ) {
+                                        return;
+                                    }
+                                    visited.add( obj );
+                                    if( this.#isCommand( obj ) ) {
+                                        this.#doApply( <IAbstractCommand>obj, endpoint, visited );
+                                    }
+                                    else if( Array.isArray( obj ) ) {
+                                        obj.forEach( item => this.#doApplyAny( item, endpoint, visited ) );
+                                    }
+                                    else if ( obj instanceof Map ) {
+                                        for( const [key, value] of obj ) {
+                                            this.#doApplyAny( value, endpoint, visited );
+                                        }
+                                    }
+                                }
+
+                                #isCommand(obj: any): obj is IAbstractCommand {
+                                    return obj && obj.commandModel && typeof obj.commandModel.applyAmbientValues === 'function';
+                                }
+                                
                                 protected abstract doApplyAmbientValues( command: any, a: any, o: any ): void;
                             }
 

@@ -12,6 +12,7 @@
   "private": true,
   "dependencies": {
     "@angular/animations": "^19.1",
+    "@angular/cdk": "^19",
     "@angular/common": "^19.1",
     "@angular/compiler": "^19.1",
     "@angular/core": "^19.1",
@@ -19,7 +20,14 @@
     "@angular/platform-browser": "^19.1",
     "@angular/platform-browser-dynamic": "^19.1",
     "@angular/router": "^19.1",
+    "@fortawesome/angular-fontawesome": "^1",
+    "@fortawesome/fontawesome-svg-core": "^6",
+    "@fortawesome/free-brands-svg-icons": "^6",
+    "@fortawesome/free-regular-svg-icons": "^6",
+    "@fortawesome/free-solid-svg-icons": "^6",
+    "@ngx-translate/core": "^16",
     "luxon": "^3.5",
+    "ng-zorro-antd": "^19",
     "rxjs": "~7.8",
     "tslib": "^2.3",
     "zone.js": "~0.15"
