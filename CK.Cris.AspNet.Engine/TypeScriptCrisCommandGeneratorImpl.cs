@@ -265,10 +265,7 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                                 }
 
                                 #doApplyAny( obj: any, endpoint: CrisEndpoint, visited: Set<{}> ): void {
-                                    if ( obj === null
-                                        || obj === undefined
-                                        || typeof obj !== 'object'
-                                        || visited.has( obj ) ) {
+                                    if ( !obj || typeof obj !== 'object' || visited.has( obj ) ) {
                                         return;
                                     }
                                     visited.add( obj );
