@@ -255,7 +255,7 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                                     this.#doApply( command, endpoint, visited );
                                 };
 
-                                #doApply( command: IAbstractCommand, endpoint: CrisEndpoint, visited: Set<{}> ) : void {
+                                #doApply( command: IAbstractCommand, endpoint: CrisEndpoint, visited: Set<{}> ): void {
                                     this.doApplyAmbientValues( command, endpoint.___a, endpoint.ambientValuesOverride );
                                     for( const key in command ) {
                                         if( command.hasOwnProperty( key ) ) {
@@ -264,7 +264,7 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                                     }
                                 }
 
-                                #doApplyAny( obj: any, endpoint: CrisEndpoint, visited: Set<{}> ) : void {
+                                #doApplyAny( obj: any, endpoint: CrisEndpoint, visited: Set<{}> ): void {
                                     if ( obj === null
                                         || obj === undefined
                                         || typeof obj !== 'object'
@@ -281,6 +281,13 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                                     else if ( obj instanceof Map ) {
                                         for( const [key, value] of obj ) {
                                             this.#doApplyAny( value, endpoint, visited );
+                                        }
+                                    }
+                                    else {
+                                        for ( const key in obj ) {
+                                            if ( obj.hasOwnProperty( key ) ) {
+                                                this.#doApplyAny( obj[key], endpoint, visited );
+                                            }
                                         }
                                     }
                                 }
