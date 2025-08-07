@@ -234,6 +234,9 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                 _crisPoco = _modelFile.DeclareType( "ICrisPoco" );
                 _abstractCommand = _modelFile.DeclareType( "IAbstractCommand" );
                 _command = _modelFile.DeclareType( "ICommand" );
+                // No need to keep this one: it is only here to be automatically
+                // resolved from @local/ck-gen.
+                _modelFile.DeclareType( "CrisError" );
             }
             Throw.DebugAssert( _command != null && _abstractCommand != null && _crisPoco != null );
             return _modelFile;
