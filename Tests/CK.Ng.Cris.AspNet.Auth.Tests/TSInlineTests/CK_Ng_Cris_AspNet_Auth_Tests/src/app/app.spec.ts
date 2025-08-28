@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { AppComponent } from './app.component';
+import { AppComponent } from './app';
 
 describe( 'AppComponent', () => {
   beforeEach( async () => {
@@ -17,7 +17,7 @@ describe( 'AppComponent', () => {
   it( `should have the 'CK_Ng_Cris_AspNet_Auth_Tests' title`, () => {
     const fixture = TestBed.createComponent( AppComponent );
     const app = fixture.componentInstance;
-    expect( app.title ).toEqual( 'CK_Ng_Cris_AspNet_Auth_Tests' );
+    expect( app.title() ).toEqual( 'CK_Ng_Cris_AspNet_Auth_Tests' );
   } );
 
   it( 'should render title', () => {
