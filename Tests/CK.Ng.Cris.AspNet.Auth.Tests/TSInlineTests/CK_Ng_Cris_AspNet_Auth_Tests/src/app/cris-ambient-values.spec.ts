@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { AppComponent } from './app.component';
+import { AppComponent } from './app';
 import { AuthService, BasicTestCommand, HttpCrisEndpoint, TestBatchCommand, TestCommand } from '@local/ck-gen';
 import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
 
