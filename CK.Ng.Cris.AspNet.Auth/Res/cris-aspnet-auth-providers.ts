@@ -9,13 +9,14 @@ import { HttpCrisEndpoint } from '@local/ck-gen/CK/Cris/HttpCrisEndpoint';
  */
 export function provideNgCrisAspNetAuthSupport(): EnvironmentProviders {
     return makeEnvironmentProviders([
-        provideAppInitializer( updateAmbientValuesOnAuthChange )
+        provideAppInitializer( updateAmbientValuesOnAuthChangeAsync )
     ]);
 }
 
-function updateAmbientValuesOnAuthChange(): void {
+async function updateAmbientValuesOnAuthChangeAsync(): Promise<void> {
     const a = inject( AuthService );
     const h = inject( HttpCrisEndpoint );
 
+    await a.isInitialized;
     a.addOnChange( async () => await h.updateAmbientValuesAsync() );
 }
