@@ -19,14 +19,14 @@ namespace CK.Cris.AspNet;
 /// Primary service that handles frontend commands (or commands sent on http).
 /// </summary>
 [SingletonContainerConfiguredService]
-[AlsoRegisterType( typeof( CrisDirectory ) )]
-[AlsoRegisterType( typeof( TypeScriptCrisCommandGenerator ) )]
-[AlsoRegisterType( typeof( CommonPocoJsonSupport ) )]
-[AlsoRegisterType( typeof( RawCrisReceiver ) )]
-[AlsoRegisterType( typeof( ICrisCallResult ) )]
-[AlsoRegisterType( typeof( CrisBackgroundExecutorService ) )]
-[AlsoRegisterType( typeof( IAmbientValuesCollectCommand ) )]
-[AlsoRegisterType( typeof( CrisCultureService ) )]
+[AlsoRegisterType<CrisDirectory,
+                  TypeScriptCrisCommandGenerator,
+                  CommonPocoJsonSupport,
+                  RawCrisReceiver,
+                  ICrisCallResult,
+                  CrisBackgroundExecutorService,
+                  IAmbientValuesCollectCommand,
+                  CrisCultureService>]
 public partial class CrisAspNetService : ISingletonAutoService
 {
     readonly RawCrisReceiver _validator;
