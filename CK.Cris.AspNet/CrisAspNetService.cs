@@ -69,19 +69,11 @@ public partial class CrisAspNetService : ISingletonAutoService
     /// <param name="reader">The payload reader.</param>
     /// <param name="currentCultureInfo">Optional current culture.</param>
     /// <returns>The command result and the <see cref="ExchangeableRuntimeFilter.Name"/> to use to send the response.</returns>
-    public Task<(ICrisCallResult Result, string TypeFilterName)> HandleRequestAsync( IActivityMonitor monitor,
-                                                                                       HttpRequest request,
-                                                                                       CommandRequestReader reader,
-                                                                                       CurrentCultureInfo? currentCultureInfo = null )
-    {
-        return DoHandleAsync( monitor, request, reader, currentCultureInfo, null );
-    }
-
-    internal async Task<(ICrisCallResult Result, string TypeFilterName)> DoHandleAsync( IActivityMonitor monitor,
-                                                                                          HttpRequest request,
-                                                                                          CommandRequestReader reader,
-                                                                                          CurrentCultureInfo? currentCultureInfo,
-                                                                                          PocoJsonImportOptions? readOptions )
+    public async Task<(ICrisCallResult Result, string TypeFilterName)> HandleRequestAsync( IActivityMonitor monitor,
+                                                                                           HttpRequest request,
+                                                                                           CommandRequestReader reader,
+                                                                                           CurrentCultureInfo? currentCultureInfo = null,
+                                                                                           PocoJsonImportOptions? readOptions = null )
     {
         // There is no try catch here and this is intended. An unhandled exception here
         // is an Internal Server Error that should bubble up.
