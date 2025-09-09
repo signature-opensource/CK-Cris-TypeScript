@@ -1,3 +1,2 @@
-using CK.Core;
 
-[assembly: PreserveAssemblyReference( typeof( CK.Cris.AspNet.CrisAspNetService ) )]
+[assembly: CK.Setup.PreserveAssemblyReference( typeof( CK.Cris.AspNet.CrisAspNetService ) )]
