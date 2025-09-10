@@ -9,8 +9,8 @@
     <PackageReference Include="CK.Testing.Nunit" Version="13.0.1--0016-develop" />
     <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="27.0.2--0042-develop" />
     <PackageReference Include="CK.TS.Angular.Engine" Version="0.26.3--0136-develop" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="5.1.0" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.Cris.Auth" Version="0.39.2--0036-develop" />
