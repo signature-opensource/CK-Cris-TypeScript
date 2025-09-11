@@ -1,2 +1,2 @@
 
-[assembly: CK.Core.PreserveAssemblyReference( typeof( CK.Setup.Cris.RawCrisExecutorImpl ) )]
+[assembly: CK.Setup.PreserveAssemblyReference( typeof( CK.Setup.Cris.RawCrisExecutorImpl ) )]

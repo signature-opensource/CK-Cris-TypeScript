@@ -12,10 +12,8 @@
           - the TypeScriptAspect is declared and one or more <TypeScript><OutuptPath>...</OutuptPath></TypeScript> is defined in the BinPathConfiguration.
           - AND the CK.Cris.TypeScript must be referenced.
     -->
-    <PackageReference Include="CK.TypeScript.Engine" Version="0.0.0--05fi8dr-explo" />
-  </ItemGroup>
-  <ItemGroup>
+    <PackageReference Include="CK.Cris.Executor.Engine" Version="0.40.0" />
+    <PackageReference Include="CK.TypeScript.Engine" Version="0.27.0" />
     <ProjectReference Include="..\CK.Cris.AspNet\CK.Cris.AspNet.csproj" />
-    <PackageReference Include="CK.Cris.Executor.Engine" Version="0.0.0--05fifyn-explo" />
   </ItemGroup>
 </Project>

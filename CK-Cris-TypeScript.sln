@@ -41,6 +41,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Ng.Cris.AspNet.Auth", "C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Ng.Cris.AspNet.Auth.Tests", "Tests\CK.Ng.Cris.AspNet.Auth.Tests\CK.Ng.Cris.AspNet.Auth.Tests.csproj", "{F744B0D2-8C99-4E99-960A-45E152F1701B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Cris.WebApi", "CK.Cris.WebApi\CK.Cris.WebApi.csproj", "{DB773A99-F78C-42E4-83A2-9B6B92083F13}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,6 +89,10 @@ Global
 		{F744B0D2-8C99-4E99-960A-45E152F1701B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F744B0D2-8C99-4E99-960A-45E152F1701B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F744B0D2-8C99-4E99-960A-45E152F1701B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DB773A99-F78C-42E4-83A2-9B6B92083F13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB773A99-F78C-42E4-83A2-9B6B92083F13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB773A99-F78C-42E4-83A2-9B6B92083F13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB773A99-F78C-42E4-83A2-9B6B92083F13}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

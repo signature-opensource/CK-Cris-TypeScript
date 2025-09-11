@@ -32,9 +32,23 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
     sealed class CodeGen : ITSCodeGenerator
     {
         TypeScriptFile? _modelFile;
+        // These are defined in Cris/Model.ts.
+        // OnResolveType returns theses parts for the implementation (they are implemented by design).
         ITSDeclaredFileType? _crisPoco;
         ITSDeclaredFileType? _abstractCommand;
         ITSDeclaredFileType? _command;
+        //
+        // We want the TypeScript AmbientValues class to be implemented in CrisEndpoint.ts:
+        // - As a not exported class.
+        // - Without comments.
+        // - That implements the IAmbientValues interface.
+        // We want the IAmbientValues to be the readonly façade of the private CrisEndpoint's AmbiantValues class.
+        // - With readonly properties.
+        // - With the comments.
+        //
+        // => But this is NOT easy. Postponed for the moment: the AmbientValues is currently exposed
+        // as a ___a field by the CrisEndpoint and this is bad...
+        //
 
         bool ITSCodeGenerator.StartCodeGeneration( IActivityMonitor monitor, TypeScriptContext context )
         {
@@ -56,7 +70,7 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
             //   - ICommand and ICommand<TResult>: they are both implemented by ICommand<TResult = void> in Model.ts.
             //   - IAbstractCommand and ICrisPoco.
             // 
-            // Model.ts also implements ICommandModel, ExecutedCommand<T>, and CrisError.
+            // Model.ts also implements CommandModel<T>, ExecutedCommand<T>, and CrisError.
             //
             if( t.Namespace == "CK.Cris" )
             {
@@ -107,17 +121,20 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                 {
                     e.ImplementedInterfaces = e.ImplementedInterfaces.Where( i => i.Type != typeof( ICommand ) );
                 }
-                e.PocoTypePart.File.Imports.ImportFromFile( EnsureCrisCommandModel( e.Monitor, e.TypeScriptContext ), "ICommandModel" );
-                e.PocoTypePart.NewLine()
-                    .Append( "get commandModel(): ICommandModel { return " ).Append( e.TSGeneratedType.TypeName ).Append( ".#m; }" ).NewLine()
-                    .NewLine()
-                    .Append( "static #m = " )
-                    .OpenBlock()
-                        .Append( "applyAmbientValues( command: any, a: any, o: any )" )
-                        .OpenBlock()
-                        .InsertPart( out var applyPart )
+                e.PocoTypePart.File.Imports.ImportFromFile( EnsureCrisCommandModel( e.Monitor, e.TypeScriptContext ), "CommandModel" );
+
+                var top = e.PocoTypePart.File.Body.CreatePart( top: true );
+                top.Append( "class MyCommandModel extends CommandModel<" ).Append( e.TSGeneratedType.TypeName ).Append( "> {" ).NewLine()
+                   .Append( "protected override doApplyAmbientValues( command: any, a: any, o: any ): void {" ).NewLine()
+                   .InsertPart( out var applyPart )
                         .CloseBlock()
                     .CloseBlock();
+
+                e.PocoTypePart.NewLine()
+                    .Append( "get commandModel(): CommandModel<this> { return " ).Append( e.TSGeneratedType.TypeName ).Append( ".#m; }" ).NewLine()
+                    .NewLine()
+                    .Append( "static #m: MyCommandModel = new MyCommandModel();" )
+                    .NewLine();
 
                 // Totally horrible service locator: this is where CK.ReaDI can shine.
                 var crisDirectory = e.TypeScriptContext.CodeContext.CurrentRun.ServiceContainer.GetRequiredService<ICrisDirectoryServiceEngine>();
@@ -217,6 +234,9 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                 _crisPoco = _modelFile.DeclareType( "ICrisPoco" );
                 _abstractCommand = _modelFile.DeclareType( "IAbstractCommand" );
                 _command = _modelFile.DeclareType( "ICommand" );
+                // No need to keep this one: it is only here to be automatically
+                // resolved from @local/ck-gen.
+                _modelFile.DeclareType( "CrisError" );
             }
             Throw.DebugAssert( _command != null && _abstractCommand != null && _crisPoco != null );
             return _modelFile;
@@ -225,19 +245,58 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
             {
                 fModel.Imports.EnsureImport( monitor, typeof( SimpleUserMessage ) );
                 fModel.Imports.EnsureImport( monitor, typeof( UserMessageLevel ) );
+                fModel.Imports.ImportFromLocalCKGen( "CrisEndpoint" );
+
                 var pocoType = context.Root.TSTypes.ResolveTSType( monitor, typeof( IPoco ) );
                 // Imports the IPoco itself...
                 pocoType.EnsureRequiredImports( fModel.Imports );
 
                 fModel.Body.Append( """
-                            /**
-                             * Describes a Command type. 
-                             **/
-                            export interface ICommandModel {
-                                /**
-                                 * This supports the CrisEndpoint implementation. This is not to be used directly.
-                                 **/
-                                readonly applyAmbientValues: (command: any, a: any, o: any ) => void;
+                            export abstract class CommandModel<T extends IAbstractCommand> {
+                                applyAmbientValues( command: T, endpoint: CrisEndpoint ): void {
+                                    const visited = new Set<{}>();
+                                    this.#doApply( command, endpoint, visited );
+                                };
+
+                                #doApply( command: IAbstractCommand, endpoint: CrisEndpoint, visited: Set<{}> ): void {
+                                    this.doApplyAmbientValues( command, endpoint.___a, endpoint.ambientValuesOverride );
+                                    for( const key in command ) {
+                                        if( command.hasOwnProperty( key ) ) {
+                                            this.#doApplyAny( (<any>command)[key], endpoint, visited );
+                                        }
+                                    }
+                                }
+
+                                #doApplyAny( obj: any, endpoint: CrisEndpoint, visited: Set<{}> ): void {
+                                    if ( !obj || typeof obj !== 'object' || visited.has( obj ) ) {
+                                        return;
+                                    }
+                                    visited.add( obj );
+                                    if( this.#isCommand( obj ) ) {
+                                        this.#doApply( <IAbstractCommand>obj, endpoint, visited );
+                                    }
+                                    else if( Array.isArray( obj ) ) {
+                                        obj.forEach( item => this.#doApplyAny( item, endpoint, visited ) );
+                                    }
+                                    else if ( obj instanceof Map ) {
+                                        for( const [key, value] of obj ) {
+                                            this.#doApplyAny( value, endpoint, visited );
+                                        }
+                                    }
+                                    else {
+                                        for ( const key in obj ) {
+                                            if ( obj.hasOwnProperty( key ) ) {
+                                                this.#doApplyAny( obj[key], endpoint, visited );
+                                            }
+                                        }
+                                    }
+                                }
+
+                                #isCommand(obj: any): obj is IAbstractCommand {
+                                    return obj && obj.commandModel && typeof obj.commandModel.applyAmbientValues === 'function';
+                                }
+                                
+                                protected abstract doApplyAmbientValues( command: any, a: any, o: any ): void;
                             }
 
                             /** 
@@ -256,7 +315,7 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                                 /** 
                                  * Gets the command model.
                                  **/
-                                get commandModel(): ICommandModel;
+                                get commandModel(): CommandModel<this>;
 
                                 readonly _brand: ICrisPoco["_brand"] & {"ICommand": any};
                             }
@@ -268,7 +327,6 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                             export interface ICommand<out TResult = void> extends IAbstractCommand {
                                 readonly _brand: IAbstractCommand["_brand"] & {"ICommandResult": void extends TResult ? any : TResult};
                             }
-                                                            
                             
                             /** 
                              * Captures the result of a command execution.
@@ -386,7 +444,8 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                     export abstract class CrisEndpoint
                     {
                         #ambientValuesRequest: Promise<AmbientValues>|undefined;
-                        #ambientValues: AmbientValues|undefined;
+                        // This should not appear here. This will be fixed in a future release.
+                        ___a: AmbientValues|undefined;
                         #subscribers: Set<( eventSource: CrisEndpoint ) => void>;
                         #isConnected: boolean;
 
@@ -458,7 +517,7 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                         public updateAmbientValuesAsync() : Promise<AmbientValues>
                         {
                             if( this.#ambientValuesRequest ) return this.#ambientValuesRequest;
-                            this.#ambientValues = undefined;
+                            this.___a = undefined;
                             return this.#ambientValuesRequest = this.waitForAmbientValuesAsync();
                         }
 
@@ -467,10 +526,10 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                         **/    
                         public async sendAsync<T>(command: ICommand<T>): Promise<ExecutedCommand<T>>
                         {
-                            let a = this.#ambientValues;
+                            let a = this.___a;
                             // Don't use coalesce here since there may be no ambient values (an empty object is truthy).
                             if( a === undefined ) a = await this.updateAmbientValuesAsync();
-                            command.commandModel.applyAmbientValues( command, a, this.ambientValuesOverride );
+                            command.commandModel.applyAmbientValues( command, this );
                             return await this.doSendAsync( command ); 
                         }
 
@@ -505,16 +564,15 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                                 else
                                 {
                                     this.#ambientValuesRequest = undefined;
-                                    this.#ambientValues = <AmbientValues>e.result;
+                                    this.___a = <AmbientValues>e.result;
                                     this.setIsConnected( true );
-                                    return this.#ambientValues;
+                                    return this.___a;
                                 }
                             }
                         }
                     """ );
             return crisEndPoint;
         }
-
 
         static ITSFileType? GenerateCrisHttpEndpoint( IActivityMonitor monitor,
                                                       TypeScriptFile modelFile,

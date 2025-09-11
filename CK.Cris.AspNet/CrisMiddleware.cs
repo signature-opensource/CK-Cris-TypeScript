@@ -67,11 +67,11 @@ public class CrisMiddleware
                                                 ? CrisAspNetService.DoStandardReadAsync
                                                 : CrisAspNetService.StandardReadCommandAsync;
 
-                var (result, typeFilterName) = await _service.DoHandleAsync( monitor,
-                                                                             ctx.Request,
-                                                                             reader,
-                                                                             currentCultureInfo: null,
-                                                                             readOptions );
+                var (result, typeFilterName) = await _service.HandleRequestAsync( monitor,
+                                                                                  ctx.Request,
+                                                                                  reader,
+                                                                                  currentCultureInfo: null,
+                                                                                  readOptions );
 
                 PocoJsonExportOptions writeOptions;
                 if( isNetPath )

@@ -8,7 +8,7 @@
     </description>
   </PropertyGroup>
   <!--
-         The CK.TypeScript package contains few types: the TypeScriptAttribute (with Folder, FileName,
+         The CK.TypeScript package contains few types: the TypeScriptTypeAttribute (with Folder, FileName,
          TypeName, SameFolderAs and SameFileAs properties) and the TypeScriptAspectConfiguration
          objects, but it depends on another micro-package: the CK.Poco.Exc.Json that generates Json serialization.
 
@@ -18,11 +18,19 @@
         For components registration, we must ensure that this CK.Cris.TypeScript.dll keeps a reference to the CK.TypeScript.dll.
         This is the goal of the [assembly: CK.Core.PreserveAssemblyReference( typeof( CK.TypeScript.TypeScriptAttribute ) )]
         in AssemblyInfo.cs.
+
+        And to secure the transitive dependency of this package itself, the MSBuild/CK.Cris.TypeScript.targets generates
+        a [assembly: CK.Core.PreserveAssemblyReference( typeof( CK.Cris.TypeScriptCrisCommandGenerator ) )] into every dependent
+        packages.
     -->
   <ItemGroup>
-    <PackageReference Include="CK.TypeScript" Version="0.0.0--05fi8dr-explo" />
+    <PackageReference Include="CK.Cris" Version="0.40.0" />
+    <PackageReference Include="CK.TypeScript" Version="0.27.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Cris" Version="0.0.0--05fifyn-explo" />
+    <Content Include="MSBuild/CK.Cris.TypeScript.targets">
+      <Pack>true</Pack>
+      <PackagePath>buildTransitive\CK.Cris.TypeScript.targets</PackagePath>
+    </Content>
   </ItemGroup>
 </Project>

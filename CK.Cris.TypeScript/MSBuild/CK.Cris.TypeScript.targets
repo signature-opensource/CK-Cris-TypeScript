@@ -1,0 +1,20 @@
+<Project>
+
+  <Target Name="AddPreserveTypeScriptCrisCommandGeneratorGeneratedFile"
+          BeforeTargets="BeforeCompile;CoreCompile"
+          Inputs="$(MSBuildAllProjects)"
+          Outputs="$(IntermediateOutputPath)CK.Cris.TypeScript.AutoAttributes.g.cs">
+    <PropertyGroup>
+      <GeneratedFilePath>$(IntermediateOutputPath)CK.Cris.TypeScript.AutoAttributes.g.cs</GeneratedFilePath>
+    </PropertyGroup>
+    <ItemGroup>
+      <Compile Include="$(GeneratedFilePath)" />
+      <FileWrites Include="$(GeneratedFilePath)" />
+    </ItemGroup>
+    <WriteLinesToFile Lines="[assembly: CK.Setup.PreserveAssemblyReferenceAttribute(typeof(CK.Cris.TypeScriptCrisCommandGenerator))]"
+                      File="$(GeneratedFilePath)"
+                      WriteOnlyWhenDifferent="true"
+                      Overwrite="true" />
+  </Target>
+
+</Project>
