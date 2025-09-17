@@ -9,7 +9,7 @@
     <PackageReference Include="NUnit3TestAdapter" Version="5.1.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.StObjEngine" Version="31.0.0" />
+    <PackageReference Include="CK.Testing.StObjEngine" Version="31.0.1--0000-develop" />
     <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="28.0.1" />
     <PackageReference Include="CK.AppIdentity.Hosting" Version="0.11.0" />
   </ItemGroup>
