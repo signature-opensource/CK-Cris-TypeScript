@@ -1,14 +1,15 @@
 using CK.TypeScript;
 using CK.TS.Angular;
 using CK.Core;
+using CK.Ng.Axios;
 
 namespace CK.Ng.Cris.AspNet;
 
 [TypeScriptPackage]
-[Requires<CK.Ng.Axios.TSPackage>]
+[Requires<AxiosPackage>]
 [NgProviderImport( "AXIOS, HttpCrisEndpoint" )]
 [NgProviderImport( "inject", From = "@angular/core" )]
 [NgProvider( "{ provide: HttpCrisEndpoint, useFactory: () => new HttpCrisEndpoint( inject( AXIOS ) ) }" )]
-public class TSPackage : TypeScriptPackage
+public class CrisAspNetPackage : TypeScriptPackage
 {
 }
