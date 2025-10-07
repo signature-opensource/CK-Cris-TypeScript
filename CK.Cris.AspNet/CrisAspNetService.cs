@@ -284,7 +284,7 @@ public partial class CrisAspNetService : ISingletonAutoService
                         : System.Text.Encodings.Web.JavaScriptEncoder.Default;
         var o = new PocoJsonExportOptions()
         {
-            AlwaysExportSimpleUserMessage = true,
+            UserMessageFormat = UserMessageSimplifiedFormat.Simple,
             TypeFilterName = typeFilterName,
             UseCamelCase = !usePascalCase,
             TypeLess = typeLess,

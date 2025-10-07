@@ -26,7 +26,7 @@ public class CrisWebResult : IResult
         httpContext.Response.ContentType = "application/json; charset=utf-8";
         var pocoExportOpts = new PocoJsonExportOptions()
         {
-            AlwaysExportSimpleUserMessage = true,
+            UserMessageFormat = UserMessageSimplifiedFormat.String,
             TypeFilterName = TypeFilterName
         };
 
