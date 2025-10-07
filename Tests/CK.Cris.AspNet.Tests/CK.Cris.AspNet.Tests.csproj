@@ -5,15 +5,15 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.TypeScriptEngine" Version="0.27.3--0006-develop" />
+    <PackageReference Include="CK.Testing.TypeScriptEngine" Version="0.27.3--0009-develop" />
     <PackageReference Include="CK.Testing.Nunit" Version="14.0.2--0001-develop" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="5.1.0" />
     <!-- We also test CK.Cris.Auth here. -->
-    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="28.0.3--0003-develop" />
+    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="28.0.3--0004-develop" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Cris.Auth" Version="0.40.3--0003-develop" />
+    <PackageReference Include="CK.Cris.Auth" Version="0.40.3--0004-develop" />
     <ProjectReference Include="..\..\CK.Cris.AspNet.Engine\CK.Cris.AspNet.Engine.csproj" />
   </ItemGroup>
 </Project>
