@@ -6,7 +6,7 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Cris.BackgroundExecutor" Version="0.41.0" />
+    <PackageReference Include="CK.Cris.BackgroundExecutor" Version="0.41.1" />
     <ProjectReference Include="..\CK.Cris.TypeScript\CK.Cris.TypeScript.csproj" />
   </ItemGroup>
 </Project>
