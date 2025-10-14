@@ -10,15 +10,15 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.Testing.StObjEngine" Version="32.0.0" />
-    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="29.0.0" />
+    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="29.0.1" />
     <PackageReference Include="CK.AppIdentity.Hosting" Version="0.11.1" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Cris.Executor.Engine" Version="0.41.0" />
-    <PackageReference Include="CK.Cris.HttpSender" Version="0.41.0" />
+    <PackageReference Include="CK.Cris.Executor.Engine" Version="0.41.1" />
+    <PackageReference Include="CK.Cris.HttpSender" Version="0.41.1" />
     <!-- This project tests Basic login and DelayedCommand. -->
-    <PackageReference Include="CK.Cris.Auth" Version="0.41.0" />
-    <PackageReference Include="CK.Cris.DelayedCommand" Version="0.41.0" />
+    <PackageReference Include="CK.Cris.Auth" Version="0.41.1" />
+    <PackageReference Include="CK.Cris.DelayedCommand" Version="0.41.1" />
     <ProjectReference Include="../../CK.Cris.AspNet.Auth.Basic/CK.Cris.AspNet.Auth.Basic.csproj" />
   </ItemGroup>
   <ItemGroup>
