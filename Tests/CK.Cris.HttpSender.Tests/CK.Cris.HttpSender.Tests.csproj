@@ -4,21 +4,21 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.NUnit" Version="14.1.1--0001-develop" />
+    <PackageReference Include="CK.Testing.NUnit" Version="14.1.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="5.1.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.StObjEngine" Version="32.1.1--0002-develop" />
-    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="29.1.1--0001-develop" />
-    <PackageReference Include="CK.AppIdentity.Hosting" Version="0.12.1--0001-develop" />
+    <PackageReference Include="CK.Testing.StObjEngine" Version="32.1.1" />
+    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="29.1.1" />
+    <PackageReference Include="CK.AppIdentity.Hosting" Version="0.12.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Cris.Executor.Engine" Version="0.42.1--0001-develop" />
-    <PackageReference Include="CK.Cris.HttpSender" Version="0.42.1--0001-develop" />
+    <PackageReference Include="CK.Cris.Executor.Engine" Version="0.42.1" />
+    <PackageReference Include="CK.Cris.HttpSender" Version="0.42.1" />
     <!-- This project tests Basic login and DelayedCommand. -->
-    <PackageReference Include="CK.Cris.Auth" Version="0.42.1--0001-develop" />
-    <PackageReference Include="CK.Cris.DelayedCommand" Version="0.42.1--0001-develop" />
+    <PackageReference Include="CK.Cris.Auth" Version="0.42.1" />
+    <PackageReference Include="CK.Cris.DelayedCommand" Version="0.42.1" />
     <ProjectReference Include="../../CK.Cris.AspNet.Auth.Basic/CK.Cris.AspNet.Auth.Basic.csproj" />
   </ItemGroup>
   <ItemGroup>
