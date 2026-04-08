@@ -1,0 +1,25 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="appveyor.yml" />
+    <File Path="Directory.Build.props" />
+    <File Path="NuGet.config" />
+  </Folder>
+  <Folder Name="/Solution Items/Documentation/">
+    <File Path="Documentation/Abstractions.png" />
+    <File Path="Documentation/AuthenticatedCommands.png" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/CK.Cris.AspNet.Tests/CK.Cris.AspNet.Tests.csproj" />
+    <Project Path="Tests/CK.Cris.HttpSender.Tests/CK.Cris.HttpSender.Tests.csproj" />
+    <Project Path="Tests/CK.Ng.Cris.AspNet.Auth.Tests/CK.Ng.Cris.AspNet.Auth.Tests.csproj" />
+  </Folder>
+  <Project Path="CK.Cris.AspNet.Auth.Basic/CK.Cris.AspNet.Auth.Basic.csproj" />
+  <Project Path="CK.Cris.AspNet.Engine/CK.Cris.AspNet.Engine.csproj" />
+  <Project Path="CK.Cris.AspNet/CK.Cris.AspNet.csproj" />
+  <Project Path="CK.Cris.TypeScript/CK.Cris.TypeScript.csproj" />
+  <Project Path="CK.Cris.WebApi/CK.Cris.WebApi.csproj" />
+  <Project Path="CK.Ng.Cris.AspNet.Auth/CK.Ng.Cris.AspNet.Auth.csproj" />
+  <Project Path="CK.Ng.Cris.AspNet/CK.Ng.Cris.AspNet.csproj" />
+</Solution>
