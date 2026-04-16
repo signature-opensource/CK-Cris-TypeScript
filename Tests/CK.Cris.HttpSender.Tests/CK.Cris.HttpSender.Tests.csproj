@@ -10,7 +10,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.Testing.StObjEngine" Version="33.0.0--ci.16" />
-    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="30.0.0--ci.9" />
+    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="30.0.0--ci.14" />
     <PackageReference Include="CK.AppIdentity.Hosting" Version="0.14.0--ci.9" />
   </ItemGroup>
   <ItemGroup>
