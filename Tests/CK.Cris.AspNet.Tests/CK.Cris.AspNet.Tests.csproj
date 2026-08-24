@@ -5,7 +5,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.TypeScriptEngine" Version="0.31.3--ci.7" />
+    <PackageReference Include="CK.Testing.TypeScriptEngine" Version="0.31.3--ci.15" />
     <PackageReference Include="CK.Testing.Nunit" Version="15.0.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="6.2.0" />
