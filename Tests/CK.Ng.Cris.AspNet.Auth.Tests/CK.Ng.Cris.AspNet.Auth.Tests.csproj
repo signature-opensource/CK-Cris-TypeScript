@@ -4,17 +4,17 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.AppIdentity.Hosting" Version="0.14.1" />
-    <PackageReference Include="CK.Testing.TypeScriptEngine" Version="0.31.3--ci.19" />
-    <PackageReference Include="CK.Testing.Nunit" Version="15.0.1" />
-    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="30.0.2--ci.7" />
-    <PackageReference Include="CK.TS.Angular.Engine" Version="0.31.3--ci.19" />
+    <PackageReference Include="CK.AppIdentity.Hosting" Version="0.14.2" />
+    <PackageReference Include="CK.Testing.TypeScriptEngine" Version="0.31.3" />
+    <PackageReference Include="CK.Testing.Nunit" Version="15.0.2" />
+    <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="30.0.2" />
+    <PackageReference Include="CK.TS.Angular.Engine" Version="0.31.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="6.2.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Cris.Auth" Version="0.43.2--ci.1" />
-    <PackageReference Include="CK.IO.Auth.Basic" Version="0.43.2--ci.1" />
+    <PackageReference Include="CK.Cris.Auth" Version="0.43.2" />
+    <PackageReference Include="CK.IO.Auth.Basic" Version="0.43.2" />
     <ProjectReference Include="..\..\CK.Cris.AspNet.Auth.Basic\CK.Cris.AspNet.Auth.Basic.csproj" />
     <ProjectReference Include="..\..\CK.Ng.Cris.AspNet.Auth\CK.Ng.Cris.AspNet.Auth.csproj" />
     <ProjectReference Include="..\..\CK.Cris.AspNet.Engine\CK.Cris.AspNet.Engine.csproj" />
