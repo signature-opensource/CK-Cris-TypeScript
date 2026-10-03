@@ -6,7 +6,7 @@
   <ItemGroup>
     <PackageReference Include="CK.AppIdentity.Hosting" Version="2.0.0-juliet.0.ci.17" />
     <PackageReference Include="CK.Testing.TypeScriptEngine" Version="2.0.0-juliet.0.ci.6" />
-    <PackageReference Include="CK.Testing.Nunit" Version="16.0.0" />
+    <PackageReference Include="CK.Testing.Nunit" Version="17.0.0-mike.0.ci.17" />
     <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="32.0.0-juliet.0.ci.5" />
     <PackageReference Include="CK.TS.Angular.Engine" Version="2.0.0-juliet.0.ci.6" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
