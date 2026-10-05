@@ -18,5 +18,6 @@ async function updateAmbientValuesOnAuthChangeAsync(): Promise<void> {
     const h = inject( HttpCrisEndpoint );
 
     await a.isInitialized;
-    a.addOnChange( async () => await h.updateAmbientValuesAsync() );
+    // A server error is already logged and is returned to the next sent commands.
+    a.addOnChange( async () => { await h.updateAmbientValuesAsync().catch( () => {} ); } );
 }

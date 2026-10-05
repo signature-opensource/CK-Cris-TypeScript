@@ -375,19 +375,32 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                                  * Gets the command that failed.
                                  */
                                 public readonly command: ICommand<unknown>;
-                            
-                                constructor( command: ICommand<unknown>, 
+
+                                /**
+                                 * Initializes a new CrisError.
+                                 * @param command The command that failed.
+                                 * @param isValidationError True for a ValidationError.
+                                 * @param errors At least one error message.
+                                 * @param innerError Optional inner error.
+                                 * @param validationMessages Optional validation messages.
+                                 * @param logKey Optional backend log key.
+                                 * @param isCommunicationError Whether this is a CommunicationError (the server could not be reached).
+                                 * Defaults to true when an innerError is provided: an error with an innerError that the server
+                                 * answered (like an HTTP 500) must set it to false to be an ExecutionError.
+                                 */
+                                constructor( command: ICommand<unknown>,
                                              isValidationError: boolean,
-                                             errors: ReadonlyArray<string>, 
+                                             errors: ReadonlyArray<string>,
                                              innerError?: Error,
                                              validationMessages?: ReadonlyArray<SimpleUserMessage>,
-                                             logKey?: string ) 
+                                             logKey?: string,
+                                             isCommunicationError?: boolean )
                                 {
                                     super( errors[0] );
-                                    this.command = command;   
-                                    this.errorType = isValidationError 
-                                                        ? "ValidationError" 
-                                                        : innerError ? "CommunicationError" : "ExecutionError";
+                                    this.command = command;
+                                    this.errorType = isValidationError
+                                                        ? "ValidationError"
+                                                        : (isCommunicationError ?? !!innerError) ? "CommunicationError" : "ExecutionError";
                                     this.innerError = innerError;
                                     this.errors = errors;
                                     this.validationMessages = validationMessages;
@@ -448,12 +461,38 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                         ___a: AmbientValues|undefined;
                         #subscribers: Set<( eventSource: CrisEndpoint ) => void>;
                         #isConnected: boolean;
+                        // Current retry delay: 0 until a CommunicationError occurs.
+                        #retryDelay: number;
+                        // Optional server provided delay (Retry-After) for the next retry.
+                        #retryAfter: number|undefined;
 
                         constructor()
                         {
                             this.ambientValuesOverride = new AmbientValuesOverride();
                             this.#isConnected = false;
                             this.#subscribers = new Set<() => void>();
+                            this.#retryDelay = 0;
+                        }
+
+                        /**
+                        * Gets or sets the delay in milliseconds before the first retry when the server cannot be reached.
+                        * The delay doubles on each failed attempt up to retryMaxDelay. Defaults to 500 ms.
+                        **/
+                        public retryMinDelay: number = 500;
+
+                        /**
+                        * Gets or sets the maximal delay in milliseconds between two retries. Defaults to 30 seconds.
+                        **/
+                        public retryMaxDelay: number = 30000;
+
+                        /**
+                        * Sets a server provided delay (typically from a Retry-After header) for the next retry.
+                        * The next retry waits at least this delay (capped by retryMaxDelay).
+                        * @param milliseconds The delay in milliseconds.
+                        */
+                        protected setRetryAfter( milliseconds: number ): void
+                        {
+                            this.#retryAfter = milliseconds;
                         }
 
                         /**
@@ -491,8 +530,10 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
 
                         /**
                         * Sets whether this endpoint is connected or not. When setting false, this triggers
-                        * an update of the endpoint values that will run until success and eventually set
-                        * a true isConnected back.
+                        * an update of the endpoint values that retries (with a backoff) until the server answers
+                        * and eventually sets a true isConnected back.
+                        * This must be called only when the server cannot be reached: a server that answers
+                        * with an error is connected.
                         * @param value Whether the connection must be considered available or not.
                         */
                         protected setIsConnected( value: boolean ): void 
@@ -500,9 +541,10 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                             if( this.#isConnected !== value )
                             {
                                 this.#isConnected = value;
-                                if( !value ) 
+                                if( !value )
                                 {
-                                    this.updateAmbientValuesAsync();
+                                    // A server error ends the update: it is returned to the waiting commands.
+                                    this.updateAmbientValuesAsync().catch( () => {} );
                                 }
                                 this.#subscribers.forEach( func => func( this ) );
                             }
@@ -513,7 +555,12 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                         /**
                         * Sends a AmbientValuesCollectCommand and waits for its return.
                         * Next commands will wait for the ubiquitous values to be received before being sent.
-                        **/    
+                        * <para>
+                        * While the server cannot be reached (CommunicationError), this retries with an exponential
+                        * backoff (see retryMinDelay and retryMaxDelay). When the server answers with an error, this
+                        * rejects with the CrisError: the next call (or the next sent command) tries again.
+                        * </para>
+                        **/
                         public updateAmbientValuesAsync() : Promise<AmbientValues>
                         {
                             if( this.#ambientValuesRequest ) return this.#ambientValuesRequest;
@@ -523,14 +570,27 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
 
                         /**
                         * Sends a command and returns an ExecutedCommand with the command's result or a CrisError.
-                        **/    
+                        * This waits for the ambient values: if they cannot be obtained because the server answered with
+                        * an error, the result is an ExecutionError.
+                        **/
                         public async sendAsync<T>(command: ICommand<T>): Promise<ExecutedCommand<T>>
                         {
-                            let a = this.___a;
                             // Don't use coalesce here since there may be no ambient values (an empty object is truthy).
-                            if( a === undefined ) a = await this.updateAmbientValuesAsync();
+                            if( this.___a === undefined )
+                            {
+                                try
+                                {
+                                    await this.updateAmbientValuesAsync();
+                                }
+                                catch( e )
+                                {
+                                    const inner = e instanceof Error ? e : new Error( `Unhandled error ${e}.` );
+                                    const logKey = e instanceof CrisError ? e.logKey : undefined;
+                                    return {command, result: new CrisError( command, false, [`Unable to obtain the ambient values: ${inner.message}`], inner, undefined, logKey, false )};
+                                }
+                            }
                             command.commandModel.applyAmbientValues( command, this );
-                            return await this.doSendAsync( command ); 
+                            return await this.doSendAsync( command );
                         }
 
                         /**
@@ -553,21 +613,38 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
 
                         private async waitForAmbientValuesAsync() : Promise<AmbientValues>
                         {
-                            while(true)
+                            try
                             {
-                                var e = await this.doSendAsync( new AmbientValuesCollectCommand() );
-                                if( e.result instanceof CrisError )
+                                while(true)
                                 {
-                                    console.error( "Error while getting AmbientValues. Retrying.", e.result );
+                                    const e = await this.doSendAsync( new AmbientValuesCollectCommand() );
+                                    if( !(e.result instanceof CrisError) )
+                                    {
+                                        this.#retryDelay = 0;
+                                        this.#ambientValuesRequest = undefined;
+                                        this.___a = <AmbientValues>e.result;
+                                        this.setIsConnected( true );
+                                        return this.___a;
+                                    }
+                                    if( e.result.errorType !== "CommunicationError" )
+                                    {
+                                        // The server answered: retrying won't help.
+                                        console.error( "Error while getting AmbientValues.", e.result );
+                                        throw e.result;
+                                    }
+                                    this.#retryDelay = this.#retryDelay === 0
+                                                        ? this.retryMinDelay
+                                                        : Math.min( this.#retryDelay * 2, this.retryMaxDelay );
+                                    const delay = Math.max( this.#retryDelay, Math.min( this.#retryAfter ?? 0, this.retryMaxDelay ) );
+                                    this.#retryAfter = undefined;
+                                    console.error( `Error while getting AmbientValues. Retrying in ${delay} ms.`, e.result );
                                     this.setIsConnected( false );
+                                    await new Promise( resolve => setTimeout( resolve, delay ) );
                                 }
-                                else
-                                {
-                                    this.#ambientValuesRequest = undefined;
-                                    this.___a = <AmbientValues>e.result;
-                                    this.setIsConnected( true );
-                                    return this.___a;
-                                }
+                            }
+                            finally
+                            {
+                                this.#ambientValuesRequest = undefined;
                             }
                         }
                     """ );
@@ -597,7 +674,7 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
             fHttpEndpoint.Imports.ImportFromFile( modelFile, "ICommand, ExecutedCommand, CrisError" );
             fHttpEndpoint.Imports.Import( crisEndpoint );
             fHttpEndpoint.Imports.EnsureImport( monitor, typeof( ICrisCallResult ) );
-            fHttpEndpoint.Imports.ImportFromLibrary( axios, "AxiosInstance, AxiosHeaders, RawAxiosRequestConfig" );
+            fHttpEndpoint.Imports.ImportFromLibrary( axios, "AxiosInstance, AxiosHeaders, RawAxiosRequestConfig, isAxiosError" );
             fHttpEndpoint.Imports.Import( ctsType );
             fHttpEndpoint.Imports.EnsureImport( monitor, typeof( ICrisResultError ) );
             fHttpEndpoint.Imports.EnsureImport( monitor, typeof( UserMessageLevel ) );
@@ -682,8 +759,49 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                                                 console.error( e );
                                                 error = new Error(`Unhandled error ${e}.`);
                                             }
+                                            if( !isAxiosError( e ) )
+                                            {
+                                                // The server answered but its response cannot be read.
+                                                return {command, result: new CrisError(command, false, ["Protocol error"], error, undefined, undefined, false )};
+                                            }
+                                            const status = e.response?.status;
+                                            if( status !== undefined && !HttpCrisEndpoint.isTransientStatus( status ) )
+                                            {
+                                                // The server answered with an error: the connection is fine and retrying won't help.
+                                                return {command, result: new CrisError(command, false, [`Server error (HTTP ${status}).`], error, undefined, undefined, false )};
+                                            }
+                                            // No response (network error, timeout) or a transient status.
+                                            const retryAfter = HttpCrisEndpoint.parseRetryAfter( e.response?.headers?.["retry-after"] );
+                                            if( retryAfter !== undefined ) this.setRetryAfter( retryAfter );
                                             this.setIsConnected(false);
-                                            return {command, result: new CrisError(command, false, ["Communication error"], error )};                                              }
+                                            return {command, result: new CrisError(command, false, ["Communication error"], error )};
+                                        }
+                                    }
+
+                                    /**
+                                     * Gets whether an HTTP status is transient: the request can be retried later.
+                                     * These are 408 (Request Timeout), 429 (Too Many Requests), 502 (Bad Gateway),
+                                     * 503 (Service Unavailable) and 504 (Gateway Timeout).
+                                     * @param status The HTTP status.
+                                     * @returns True if the status is transient.
+                                     */
+                                    public static isTransientStatus( status: number ): boolean
+                                    {
+                                        return status === 408 || status === 429 || status === 502 || status === 503 || status === 504;
+                                    }
+
+                                    /**
+                                     * Parses a Retry-After header value (delay in seconds or HTTP date).
+                                     * @param value The header value.
+                                     * @returns The delay in milliseconds or undefined.
+                                     */
+                                    static parseRetryAfter( value: unknown ): number|undefined
+                                    {
+                                        if( typeof value !== "string" || value.length === 0 ) return undefined;
+                                        const seconds = Number( value );
+                                        if( !Number.isNaN( seconds ) ) return seconds >= 0 ? seconds * 1000 : undefined;
+                                        const date = Date.parse( value );
+                                        return Number.isNaN( date ) ? undefined : Math.max( 0, date - Date.now() );
                                     }
                                 """ );
             return httpCrisEndPoint;
