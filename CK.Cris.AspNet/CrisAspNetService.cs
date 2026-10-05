@@ -27,6 +27,9 @@ namespace CK.Cris.AspNet;
                   CrisBackgroundExecutorService,
                   IAmbientValuesCollectCommand,
                   CrisCultureService>]
+// Commands without ambient services are executed inline by the CrisExecutionContext resolved
+// from the request services.
+[AlsoRegisterType<CrisExecutionContext>]
 public partial class CrisAspNetService : ISingletonAutoService
 {
     readonly RawCrisReceiver _validator;

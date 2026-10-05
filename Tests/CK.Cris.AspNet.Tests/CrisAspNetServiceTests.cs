@@ -74,7 +74,6 @@ namespace CK.Cris.AspNet.Tests
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ITestCommand ),
                                                   typeof( TestHandler ),
-                                                  typeof( CrisExecutionContext ),
                                                   typeof( CrisAspNetService ),
                                                   typeof( AuthenticationInfoTokenService ),
                                                   typeof( StdAuthenticationTypeSystem ) );

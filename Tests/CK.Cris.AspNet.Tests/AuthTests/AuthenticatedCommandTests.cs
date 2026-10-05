@@ -77,7 +77,6 @@ public class AuthenticatedCommandTests
                                               typeof( IUnsafeWithResultCommand ),
                                               typeof( UnsafeHandler ),
                                               typeof( CrisAuthenticationService ),
-                                              typeof( CrisExecutionContext ),
                                               typeof( CrisAspNetService ),
                                               typeof( AuthenticationInfoTokenService ),
                                               typeof( StdAuthenticationTypeSystem ) );

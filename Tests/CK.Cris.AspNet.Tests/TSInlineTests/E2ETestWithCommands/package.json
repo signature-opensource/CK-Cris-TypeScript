@@ -3,7 +3,7 @@
   "private": true,
   "packageManager": "yarn@4.8.1",
   "scripts": {
-    "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Debug/net8.0/CK.TypeScript.LiveEngine.dll\"",
+    "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Debug/net10.0/CK.TypeScript.LiveEngine.dll\"",
     "test": "jest"
   },
   "devDependencies": {
