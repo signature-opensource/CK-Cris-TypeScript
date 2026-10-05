@@ -13,7 +13,7 @@
     <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="32.0.0-juliet.0.ci.7" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Cris.Auth" Version="2.0.0-juliet.0.ci.13" />
+    <PackageReference Include="CK.Cris.Auth" Version="2.0.0-juliet.0.ci.15" />
     <ProjectReference Include="..\..\CK.Cris.AspNet.Engine\CK.Cris.AspNet.Engine.csproj" />
   </ItemGroup>
 </Project>

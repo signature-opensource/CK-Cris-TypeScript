@@ -13,7 +13,7 @@
     <PackageReference Include="NUnit3TestAdapter" Version="6.3.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Cris.Auth" Version="2.0.0-juliet.0.ci.13" />
+    <PackageReference Include="CK.Cris.Auth" Version="2.0.0-juliet.0.ci.15" />
     <PackageReference Include="CK.IO.Auth.Basic" Version="2.0.0-juliet.0.ci.12" />
     <ProjectReference Include="..\..\CK.Cris.AspNet.Auth.Basic\CK.Cris.AspNet.Auth.Basic.csproj" />
     <ProjectReference Include="..\..\CK.Ng.Cris.AspNet.Auth\CK.Ng.Cris.AspNet.Auth.csproj" />
