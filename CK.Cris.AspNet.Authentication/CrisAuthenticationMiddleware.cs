@@ -24,7 +24,7 @@ namespace CK.Cris.AspNet.Authentication;
 ///   request presents the binding secret of its session (the binding cookie). Otherwise the request is anonymous.
 ///   </item>
 ///   <item>
-///   <b>"/.cris/auth":</b> the route of the session commands (and only them, see <see cref="SessionCommandRouteGuard"/>). It
+///   <b>"/.cris/auth":</b> the route of the session commands (and only them, see <see cref="CrisAspNetAuthenticationPackage"/>). It
 ///   accepts only POST with a JSON content. A session command is relayed to a remote authentication center when there is one
 ///   (<see cref="IAuthenticationSessionRelay"/>), executed here otherwise.
 ///   </item>
@@ -33,6 +33,7 @@ namespace CK.Cris.AspNet.Authentication;
 public sealed class CrisAuthenticationMiddleware
 {
     static readonly PathString _crisPath = new PathString( "/.cris" );
+    static readonly PathString _authPath = new PathString( CrisAspNetAuthenticationPackage.AuthRoute );
     readonly RequestDelegate _next;
     readonly CrisAspNetService _service;
     readonly PocoDirectory _pocoDirectory;
@@ -73,7 +74,7 @@ public sealed class CrisAuthenticationMiddleware
         var endpoint = new HttpSessionEndpoint( ctx );
         auth.Endpoint = endpoint;
         auth.Info = await AuthenticateAsync( monitor, services, endpoint );
-        if( ctx.Request.Path.StartsWithSegments( SessionCommandRouteGuard.AuthPath ) )
+        if( ctx.Request.Path == _authPath )
         {
             await HandleSessionCommandAsync( ctx, monitor, services );
             return;

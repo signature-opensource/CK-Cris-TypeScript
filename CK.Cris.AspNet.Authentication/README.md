@@ -17,7 +17,15 @@ app.UseCris();
 | `/.cris/auth` | The session commands (`ICommandAuthenticationSession`: logins, refresh, logout, impersonation) and only them. POST with a JSON content only. |
 | `/.cris` | The other commands. A session command is refused here. |
 
-The [`SessionCommandRouteGuard`](SessionCommandRouteGuard.cs) (a `CK.Cris.AspNet.ICrisRouteGuard`) enforces this. A
+The route is declared once, on the package ([`CrisAspNetAuthenticationPackage`](CrisAspNetAuthenticationPackage.cs)):
+
+```csharp
+[CrisRoute<ICommandAuthenticationSession>( AuthRoute )]
+public class CrisAspNetAuthenticationPackage : TypeScriptPackage
+```
+
+This single declaration is used by both sides: the generated TypeScript client posts the session commands to
+`/.cris/auth`, and `CrisAspNetService` accepts a command only on its route (and a route accepts only its commands). A
 session command is relayed to a remote authentication center when there is one (`IAuthenticationSessionRelay`), before
 the handlers (the `executeOverride` of `CrisAspNetService.HandleRequestAsync`), and executed here otherwise.
 

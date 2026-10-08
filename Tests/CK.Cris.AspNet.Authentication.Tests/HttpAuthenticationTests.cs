@@ -119,7 +119,7 @@ public class HttpAuthenticationTests
         var target = TestHelper.GetTypeScriptInlineTargetProjectPath();
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CrisAspNetService ),
-                                              typeof( SessionCommandRouteGuard ),
+                                              typeof( CrisAspNetAuthenticationPackage ),
                                               typeof( CrisAuthenticationService ),
                                               typeof( AuthenticationInfo ),
                                               typeof( AuthenticationInfoDefaultProvider ),
@@ -218,9 +218,15 @@ public class HttpAuthenticationTests
         async Task<string> PostTextAsync( string path, IPoco command )
             => await (await server.Client.PostJsonAsync( path, ToJson( server, command ) )).Content.ReadAsStringAsync();
         FakeWeakProvider.Called = 0;
-        (await PostTextAsync( "/.cris", Create<IWeakLoginCommand>( server, c => c.WeakActorName = "Operator" ) )).ShouldContain( "A session command must be sent to" );
+        // The route is declared by [CrisRoute<ICommandAuthenticationSession>( "/.cris/auth" )] on the CrisAspNetAuthenticationPackage.
+        (await PostTextAsync( "/.cris", Create<IWeakLoginCommand>( server, c => c.WeakActorName = "Operator" ) )).ShouldContain( "must be sent to \\u0027/.cris/auth\\u0027" );
+        // The legacy "/.cris/net" accepts only the commands of "/.cris".
+        (await PostTextAsync( "/.cris/net", Create<IWeakLoginCommand>( server, c => c.WeakActorName = "Operator" ) )).ShouldContain( "must be sent to \\u0027/.cris/auth\\u0027" );
         FakeWeakProvider.Called.ShouldBe( 0 );
-        (await PostTextAsync( "/.cris/auth", Create<IWhoAmIQCommand>( server ) )).ShouldContain( "Only the session commands" );
+        (await PostTextAsync( "/.cris/auth", Create<IWhoAmIQCommand>( server ) )).ShouldContain( "must be sent to \\u0027/.cris\\u0027" );
+        // An undeclared route accepts no command.
+        (await PostTextAsync( "/.cris/other", Create<IWhoAmIQCommand>( server ) )).ShouldContain( "must be sent to \\u0027/.cris\\u0027" );
+        (await PostTextAsync( "/.cris", Create<IWhoAmIQCommand>( server ) )).ShouldNotContain( "must be sent to" );
     }
 
     [Test]

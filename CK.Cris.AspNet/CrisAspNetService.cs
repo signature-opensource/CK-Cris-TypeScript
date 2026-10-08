@@ -17,7 +17,11 @@ namespace CK.Cris.AspNet;
 
 /// <summary>
 /// Primary service that handles frontend commands (or commands sent on http).
+/// <para>
+/// A command is accepted only on its route (see <see cref="CrisRouteAttribute"/>): the routes are generated on the commands.
+/// </para>
 /// </summary>
+[ContextBoundDelegation( "CK.Setup.Cris.CrisAspNetServiceImpl, CK.Cris.AspNet.Engine" )]
 [SingletonContainerConfiguredService]
 [AlsoRegisterType<CrisDirectory,
                   TypeScriptCrisCommandGenerator,
@@ -30,14 +34,33 @@ namespace CK.Cris.AspNet;
 // Commands without ambient services are executed inline by the CrisExecutionContext resolved
 // from the request services.
 [AlsoRegisterType<CrisExecutionContext>]
-public partial class CrisAspNetService : ISingletonAutoService
+public abstract partial class CrisAspNetService : ISingletonAutoService
 {
+    /// <summary>
+    /// The default route of the commands: "/.cris".
+    /// </summary>
+    public static readonly PathString DefaultRoute = new PathString( "/.cris" );
+
+    // Legacy: the HttpCrisSender route accepts the commands of the default route.
+    static readonly PathString _netRoute = new PathString( "/.cris/net" );
+
+    /// <summary>
+    /// Generated code infrastructure: implemented by every command. The route is generated
+    /// on the commands that have a declared route (see <see cref="CrisRouteAttribute"/>).
+    /// </summary>
+    public interface ICrisRouteImpl
+    {
+        /// <summary>
+        /// Gets the declared route of the command. Null for the <see cref="DefaultRoute"/>.
+        /// </summary>
+        string? CrisRoute => null;
+    }
+
     readonly RawCrisReceiver _validator;
     readonly CrisBackgroundExecutorService _backgroundExecutor;
     internal readonly PocoDirectory _pocoDirectory;
     readonly IPocoFactory<ICrisCallResult> _resultFactory;
     readonly IPocoFactory<ICrisResultError> _crisErrorResultFactory;
-    readonly ICrisRouteGuard[] _routeGuards;
 
     /// <summary>
     /// Initializes a new <see cref="CrisAspNetService"/>.
@@ -47,20 +70,27 @@ public partial class CrisAspNetService : ISingletonAutoService
     /// <param name="backgroundExecutor">The background executor service.</param>
     /// <param name="resultFactory">The AspNet result factory.</param>
     /// <param name="errorResultFactory">The Cris error factory.</param>
-    /// <param name="routeGuards">The route guards.</param>
-    public CrisAspNetService( PocoDirectory poco,
-                              RawCrisReceiver validator,
-                              CrisBackgroundExecutorService backgroundExecutor,
-                              IPocoFactory<ICrisCallResult> resultFactory,
-                              IPocoFactory<ICrisResultError> errorResultFactory,
-                              IEnumerable<ICrisRouteGuard> routeGuards )
+    protected CrisAspNetService( PocoDirectory poco,
+                                 RawCrisReceiver validator,
+                                 CrisBackgroundExecutorService backgroundExecutor,
+                                 IPocoFactory<ICrisCallResult> resultFactory,
+                                 IPocoFactory<ICrisResultError> errorResultFactory )
     {
         _pocoDirectory = poco;
         _validator = validator;
         _backgroundExecutor = backgroundExecutor;
         _resultFactory = resultFactory;
         _crisErrorResultFactory = errorResultFactory;
-        _routeGuards = routeGuards.ToArray();
+    }
+
+    /// <summary>
+    /// Gets the route of a command: its declared route (see <see cref="CrisRouteAttribute"/>) or the <see cref="DefaultRoute"/>.
+    /// </summary>
+    /// <param name="command">The command.</param>
+    /// <returns>The route of the command.</returns>
+    public static PathString GetRoute( IAbstractCommand command )
+    {
+        return ((ICrisRouteImpl)command).CrisRoute is string r ? new PathString( r ) : DefaultRoute;
     }
 
     /// <summary>
@@ -108,17 +138,15 @@ public partial class CrisAspNetService : ISingletonAutoService
             {
                 // No read error => no validation error (and we have a command).
                 Throw.DebugAssert( readResult.Command != null );
-                // The route guards: is this command accepted on this route?
-                foreach( var g in _routeGuards )
+                // A command is accepted only on its route, and a route accepts only its commands.
+                var expected = GetRoute( readResult.Command );
+                var path = request.Path == _netRoute ? DefaultRoute : request.Path;
+                if( path != expected )
                 {
-                    var refused = g.Check( request.Path, readResult.Command );
-                    if( refused != null )
-                    {
-                        monitor.Warn( $"Command '{readResult.Command.CrisPocoModel.PocoName}' refused on '{request.Path}': {refused}" );
-                        readResult.ValidationMessages.Error( refused, "Cris.AspNet.RouteRefused" );
-                        result = CreateValidationErrorResult( readResult.ValidationMessages.UserMessages, null );
-                        break;
-                    }
+                    var refused = $"Command '{readResult.Command.CrisPocoModel.PocoName}' must be sent to '{expected}'.";
+                    monitor.Warn( $"{refused} It has been sent to '{request.Path}'." );
+                    readResult.ValidationMessages.Error( refused, "Cris.AspNet.RouteRefused" );
+                    result = CreateValidationErrorResult( readResult.ValidationMessages.UserMessages, null );
                 }
             }
             if( result == null )

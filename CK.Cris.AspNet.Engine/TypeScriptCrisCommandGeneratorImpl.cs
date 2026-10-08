@@ -123,9 +123,21 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                 }
                 e.PocoTypePart.File.Imports.ImportFromFile( EnsureCrisCommandModel( e.Monitor, e.TypeScriptContext ), "CommandModel" );
 
+                // Totally horrible service locator: this is where CK.ReaDI can shine.
+                var currentRun = e.TypeScriptContext.CodeContext.CurrentRun;
+                var crisDirectory = currentRun.ServiceContainer.GetRequiredService<ICrisDirectoryServiceEngine>();
+                // The routes are the ones of the C# side (CrisAspNetServiceImpl). On error, they are logged.
+                var crisType = crisDirectory.Find( e.PrimaryPocoType );
+                var route = crisType != null ? CrisRoutes.Get( e.Monitor, currentRun, crisDirectory )?.Find( crisType ) : null;
+
                 var top = e.PocoTypePart.File.Body.CreatePart( top: true );
-                top.Append( "class MyCommandModel extends CommandModel<" ).Append( e.TSGeneratedType.TypeName ).Append( "> {" ).NewLine()
-                   .Append( "protected override doApplyAmbientValues( command: any, a: any, o: any ): void {" ).NewLine()
+                top.Append( "class MyCommandModel extends CommandModel<" ).Append( e.TSGeneratedType.TypeName ).Append( "> {" ).NewLine();
+                if( route != null )
+                {
+                    top.Append( "override get route(): string|undefined { return " ).AppendSourceString( route ).Append( "; }" ).NewLine()
+                       .NewLine();
+                }
+                top.Append( "protected override doApplyAmbientValues( command: any, a: any, o: any ): void {" ).NewLine()
                    .InsertPart( out var applyPart )
                         .CloseBlock()
                     .CloseBlock();
@@ -135,9 +147,6 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                     .NewLine()
                     .Append( "static #m: MyCommandModel = new MyCommandModel();" )
                     .NewLine();
-
-                // Totally horrible service locator: this is where CK.ReaDI can shine.
-                var crisDirectory = e.TypeScriptContext.CodeContext.CurrentRun.ServiceContainer.GetRequiredService<ICrisDirectoryServiceEngine>();
 
                 bool atLeastOne = false;
                 foreach( var f in e.Fields )
@@ -253,6 +262,12 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
 
                 fModel.Body.Append( """
                             export abstract class CommandModel<T extends IAbstractCommand> {
+                                /**
+                                 * Gets the declared route of the command (like "/.cris/auth").
+                                 * Undefined for the default "/.cris" route.
+                                 **/
+                                get route(): string|undefined { return undefined; }
+
                                 applyAmbientValues( command: T, endpoint: CrisEndpoint ): void {
                                     const visited = new Set<{}>();
                                     this.#doApply( command, endpoint, visited );
@@ -702,6 +717,7 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                                     #axios: AxiosInstance;
                                     #typeFilterName : string;
                                     #crisEndpointUrl : string;
+                                    #query : string;
 
                                     /**
                                      * Gets the TypeFilterName that defines the exchangeable set of objects
@@ -718,7 +734,8 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                                     /**
                                      * Initializes a new HttpCrisEndpoint.  
                                      * @param axios The axios instance.
-                                     * @param crisEndpointUrl The Cris endpoint url to use.
+                                     * @param crisEndpointUrl The url of the "/.cris" route. Defaults to window.location.origin + '/.cris'.
+                                     * A command with a declared route (like "/.cris/auth") is sent to this url followed by the rest of its route.
                                      * @param typeFilterName The TypeFilterName that defines the set of objects that can be exchanged with the backend.
                                      */
                                     constructor( axios: AxiosInstance, crisEndpointUrl?: string, typeFilterName: string = CTSType.typeFilterName)
@@ -727,8 +744,22 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                                         if( !crisEndpointUrl ) crisEndpointUrl = window.location.origin + '/.cris';
                                         this.#axios = axios;
                                         this.#typeFilterName = typeFilterName;
-                                        this.#crisEndpointUrl = crisEndpointUrl + (crisEndpointUrl.indexOf('?') < 0 ? "?" : "&" ) + "TypeFilterName=" + typeFilterName;
+                                        const q = crisEndpointUrl.indexOf('?');
+                                        this.#crisEndpointUrl = q < 0 ? crisEndpointUrl : crisEndpointUrl.substring( 0, q );
+                                        this.#query = (q < 0 ? "?" : crisEndpointUrl.substring( q ) + "&") + "TypeFilterName=" + typeFilterName;
                                         this.axiosConfig = defaultCrisAxiosConfig;
+                                    }
+
+                                    /**
+                                     * Gets the url to which a command is sent: the url of its route.
+                                     * @param command The command.
+                                     * @returns The url to use.
+                                     */
+                                    public getCommandUrl( command: ICommand<unknown> ): string
+                                    {
+                                        const route = command.commandModel.route;
+                                        // A declared route is "/.cris/..." (checked by the setup).
+                                        return this.#crisEndpointUrl + (route ? route.substring( 6 ) : "") + this.#query;
                                     }
 
                                     protected override async doSendAsync<T>(command: ICommand<T>): Promise<ExecutedCommand<T>>
@@ -736,7 +767,7 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                                         try
                                         {
                                             const req = JSON.stringify(CTSType.toTypedJson(command));
-                                            const resp = await this.#axios.post(this.#crisEndpointUrl, req, this.axiosConfig);
+                                            const resp = await this.#axios.post(this.getCommandUrl( command ), req, this.axiosConfig);
                                             const netResult = <CrisCallResult>CTSType["CrisCallResult"].nosj( JSON.parse(resp.data) );
                                             let r = netResult.result;
                                             if( r instanceof CrisResultError ) 
