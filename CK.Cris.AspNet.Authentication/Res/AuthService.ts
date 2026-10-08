@@ -1,5 +1,5 @@
 import { HttpCrisEndpoint, HttpCrisEndpointHook } from '@local/ck-gen/CK/Cris/HttpCrisEndpoint';
-import { CrisError, ExecutedCommand } from '@local/ck-gen/CK/Cris/Model';
+import { CrisError, ExecutedCommand, ICommand } from '@local/ck-gen/CK/Cris/Model';
 import { CTSType } from '@local/ck-gen/CK/Core/CTSType';
 import { AuthLevel } from '@local/ck-gen/CK/Core/AuthLevel';
 import { SessionResult } from '@local/ck-gen/CK/IO/Authentication/SessionResult';
@@ -34,6 +34,10 @@ export class AuthService {
     #refreshTimer: ReturnType<typeof setTimeout>|undefined;
     #isInitialized: Promise<void>;
     #closed: boolean;
+    // The sending order of the commands: the last sent session command wins.
+    #sent: WeakMap<object, number>;
+    #sentCount: number;
+    #lastApplied: number;
 
     /**
      * The name of the lock (Web Locks API) that serializes the refreshes of the tabs.
@@ -64,9 +68,12 @@ export class AuthService {
         this.#info = new AuthenticationInfoPoco();
         this.#rememberMe = false;
         this.#closed = false;
+        this.#sent = new WeakMap();
+        this.#sentCount = 0;
+        this.#lastApplied = 0;
         this.#subscribers = new Set();
         this.#hook = {
-            getHeaders: () => this.#token ? { "Authorization": "Bearer " + this.#token } : undefined,
+            getHeaders: c => this.#onSending( c ),
             onExecuted: e => this.#onExecuted( e )
         };
         this.#onStorage = e => {
@@ -193,22 +200,38 @@ export class AuthService {
         }
     }
 
+    #onSending( command: ICommand<unknown> ): Record<string,string>|undefined {
+        this.#sent.set( command, ++this.#sentCount );
+        return this.#token ? { "Authorization": "Bearer " + this.#token } : undefined;
+    }
+
     #onExecuted( e: ExecutedCommand<unknown> ): void {
         if( this.#closed ) return;
         const r = e.result;
-        if( e.command instanceof LogoutSessionCommand ) {
+        const isLogout = e.command instanceof LogoutSessionCommand;
+        if( !isLogout && !(r instanceof SessionResult) && !(e.command instanceof RefreshSessionCommand) ) return;
+        // The last sent session command wins: the answer of an older one (a refresh sent before a logout for instance)
+        // that arrives late is ignored.
+        const seq = this.#sent.get( e.command ) ?? 0;
+        if( seq < this.#lastApplied ) return;
+        let applied = true;
+        if( isLogout ) {
             // The server clears the session whatever happens, unless it cannot be reached.
             if( !(r instanceof CrisError && r.errorType === "CommunicationError") ) this.#apply( undefined, undefined, false, true );
+            else applied = false;
         }
         else if( r instanceof SessionResult ) {
             if( r.success && r.token ) this.#apply( r.info, r.token, r.rememberMe, true );
             // A failed refresh ends the session (the server cleared it). A failed login or impersonation changes nothing.
             else if( e.command instanceof RefreshSessionCommand ) this.#apply( undefined, undefined, false, true );
+            else applied = false;
         }
-        else if( e.command instanceof RefreshSessionCommand
-                 && r instanceof CrisError && r.errorType !== "CommunicationError" ) {
+        else if( r instanceof CrisError && r.errorType !== "CommunicationError" ) {
+            // A refresh that failed on the server.
             this.#apply( undefined, undefined, false, true );
         }
+        else applied = false;
+        if( applied ) this.#lastApplied = seq;
     }
 
     #adopt( stored: StoredSession|undefined ): void {

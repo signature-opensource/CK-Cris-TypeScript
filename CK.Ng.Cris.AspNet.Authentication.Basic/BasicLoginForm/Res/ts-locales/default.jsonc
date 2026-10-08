@@ -1,0 +1,11 @@
+{
+    "Button.Login": "Log in",
+    "CK.BasicLogin.Password.Placeholder": "Enter your password",
+    "CK.BasicLogin.Password.Required": "Please enter your password",
+    "CK.BasicLogin.PasswordLost.Label": "Forgot your password ?",
+    "CK.BasicLogin.RememberMe.Label": "Remember me",
+    "CK.BasicLogin.UserName.InvalidEmail": "Invalid email",
+    "CK.BasicLogin.UserName.Placeholder": "Enter your username",
+    "CK.BasicLogin.UserName.Required": "Please enter your username",
+    "User.LoginFailure": "Wrong credentials. Please try again."
+}

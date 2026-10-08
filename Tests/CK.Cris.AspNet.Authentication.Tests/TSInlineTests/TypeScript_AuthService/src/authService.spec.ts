@@ -147,3 +147,15 @@ it( 'the session result is the one of the command', async () => {
   expect( executed.result ).toBeInstanceOf( SessionResult );
   expect( (executed.result as SessionResult).token ).toBe( auth.token );
 });
+
+it( 'a logout sent while a refresh is in flight wins, whatever the order of the answers', async () => {
+  const [ep, auth] = await newTabAsync();
+  await ep.sendOrThrowAsync( new WeakLoginCommand( "Operator" ) );
+  for( let i = 0; i < 5; ++i ) {
+    await ep.sendOrThrowAsync( new WeakLoginCommand( "Operator" ) );
+    await Promise.all( [auth.refresh(), auth.logout()] );
+    expect( auth.token ).toBeUndefined();
+    expect( localStorage.getItem( "ck-auth" ) ).toBeNull();
+    expect( await whoAmIAsync( ep ) ).toBe( "Anonymous" );
+  }
+});

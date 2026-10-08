@@ -1,0 +1,41 @@
+.ck-user-info-box-avatar {
+    cursor: pointer;
+    font-size: @ck-user-info-box-avatar-font-size;
+
+    &.ant-avatar-image img {
+        // <PreAvatarImgStyle revert />
+        object-fit: contain;
+        // <PostAvatarImgStyle />
+    }
+}
+
+.ck-user-info-box-username-item {
+    cursor: default;
+    pointer-events: none;
+    background: transparent;
+    font-weight: @ck-user-info-box-username-font-weight;
+
+    .ck-user-info-box-username {
+        font-size: @ck-user-info-box-username-font-size;
+    }
+}
+
+.ck-user-info-box-divider {
+    margin: @ck-user-info-box-divider-margin;
+}
+
+.ck-user-info-box-menu-item {
+    .icon {
+        margin-right: @ck-icon-right-margin;
+    }
+
+    &.logout {
+        color: @ck-user-info-box-logout-color;
+    }
+}
+
+.ck-user-info-box-level,
+.ck-user-info-box-actual {
+    margin-left: @ck-icon-right-margin;
+    color: @light-grey;
+}

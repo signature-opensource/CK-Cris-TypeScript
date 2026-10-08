@@ -1,0 +1,9 @@
+{
+    "CK.UserInfoBox.ImpersonatedBy": "Impersonated by",
+    "CK.UserInfoBox.Level.Critical": "Critical",
+    "CK.UserInfoBox.Level.None": "Anonymous",
+    "CK.UserInfoBox.Level.Normal": "Normal",
+    "CK.UserInfoBox.Level.Unsafe": "Unsafe",
+    "CK.UserInfoBox.Profile": "Profile",
+    "CK.UserInfoBox.SignOut": "Sign out"
+}

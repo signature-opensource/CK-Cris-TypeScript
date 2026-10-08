@@ -27,7 +27,12 @@ namespace CK.Cris.AspNet.Authentication;
 /// The secrets are generated here and never leave this endpoint: the authentication center only knows their hashes
 /// (base64url SHA-256 of the secret).
 /// </para>
+/// <para>
+/// This is not an automatic service: the endpoint of a request is created by the <see cref="CrisAuthenticationMiddleware"/>
+/// and provided by the <see cref="HttpAuthenticationContext"/> (see <see cref="Microsoft.Extensions.DependencyInjection.CrisAuthenticationExtensions.AddCrisAuthentication"/>).
+/// </para>
 /// </summary>
+[ExcludedCKType]
 public sealed class HttpSessionEndpoint : IAuthenticationSessionEndpoint
 {
     /// <summary>

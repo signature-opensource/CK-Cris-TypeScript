@@ -1,0 +1,10 @@
+{
+    "Button.Login": "Se connecter",
+    "CK.BasicLogin.Password.Placeholder": "Renseignez votre mot de passe",
+    "CK.BasicLogin.Password.Required": "Veuillez renseigner votre mot de passe",
+    "CK.BasicLogin.PasswordLost.Label": "Mot de passe oublié ?",
+    "CK.BasicLogin.RememberMe.Label": "Se souvenir de moi",
+    "CK.BasicLogin.UserName.Placeholder": "Renseignez votre nom d'utilisateur",
+    "CK.BasicLogin.UserName.Required": "Veuillez renseigner votre nom d'utilisateur",
+    "User.LoginFailure": "Les identifiants renseignés sont invalides. Veuillez réessayer."
+}

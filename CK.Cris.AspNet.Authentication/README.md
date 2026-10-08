@@ -73,6 +73,8 @@ auth.actor.actorName; // "Alice"
   command of its choice.
 - **What changes the state:** a successful `SessionResult` (a new token); a logout; a failed refresh (the server has
   cleared the session). A failed login or impersonation changes nothing.
+- **The last sent session command wins:** the answer of an older one that arrives late (a refresh sent before a logout,
+  for instance) is ignored.
 - **The token is cached in `localStorage`** and shared by the tabs (the `storage` event). Every session command rotates
   the session secrets (the cookies), so a tab with an old token would be anonymous. The refreshes are serialized across
   the tabs (`navigator.locks`): a tab that waited adopts the token of the other one. At load, the cached token is used

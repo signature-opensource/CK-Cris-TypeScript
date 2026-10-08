@@ -1,0 +1,24 @@
+<div class="ck-auth-mobile" *appResponsive="'(max-width: 1024px)'">
+    @if( showReturnButton ) {
+        <button class="ck-auth-back-btn" nz-button nzType="link" routerLink="">
+            <fa-icon class="ck-btn-icon" [icon]="leftIcon"></fa-icon>
+            {{ 'Button.Back' | translate }}
+        </button>
+    }
+    <router-outlet />
+</div>
+
+<div class="ck-auth-desktop" *appResponsive="'(min-width: 1025px)'">
+    <div class="left">
+        <img [src]="displayedLogoSrc" class="logo" width="766" height="200" priority alt />
+    </div>
+    <div class="right">
+        @if( showReturnButton ) {
+            <button class="ck-auth-back-btn" nz-button nzType="link" routerLink="/">
+                <fa-icon class="ck-btn-icon" [icon]="leftIcon"></fa-icon>
+                {{ 'Button.Back' | translate }}
+            </button>
+        }
+        <router-outlet />
+    </div>
+</div>

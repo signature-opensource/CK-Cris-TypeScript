@@ -1,0 +1,53 @@
+<form nz-form [formGroup]="loginForm" (keydown)="keyDown($event)" class="ck-login-form">
+    <nz-form-item>
+        <nz-form-control nzHasFeedback [nzErrorTip]="userNameError">
+            <nz-input-group>
+                <fa-icon class="ck-btn-icon" [icon]="userIcon"></fa-icon>
+                <input nz-input autocomplete="username" type="text" formControlName="userName" [placeholder]="'CK.BasicLogin.UserName.Placeholder' | translate" />
+            </nz-input-group>
+        </nz-form-control>
+        <ng-template #userNameError>
+            @if (loginForm.get('userName')!.hasError('required')) {
+                <span class="ck-login-form-text">{{ 'CK.BasicLogin.UserName.Required' | translate }}</span>
+            }
+            <!-- <UserNameValidationError /> -->
+        </ng-template>
+    </nz-form-item>
+    <nz-form-item>
+        <nz-form-control nzHasFeedBack [nzErrorTip]="passwordError">
+            <nz-input-group [nzSuffix]="passwordTemplate">
+                <fa-icon class="ck-btn-icon" [icon]="passwordIcon"></fa-icon>
+                <input
+                    nz-input
+                    autocomplete="current-password"
+                    [type]="showPassword ? 'text' : 'password'"
+                    name="password"
+                    id="password"
+                    formControlName="password"
+                    [placeholder]="'CK.BasicLogin.Password.Placeholder' | translate" />
+            </nz-input-group>
+            <ng-template #passwordTemplate>
+                @if (showPassword) {
+                    <fa-icon style="cursor: pointer;" [icon]="eyeIcon" (click)="showPassword = !showPassword"></fa-icon>
+                } @else {
+                    <fa-icon style="cursor: pointer;" [icon]="eyeSlashIcon" (click)="showPassword = !showPassword"></fa-icon>
+                }
+            </ng-template>
+            <ng-template #passwordError>
+                @if (loginForm.get('password')!.hasError('required')) {
+                    <span class="ck-login-form-text">{{ 'CK.BasicLogin.Password.Required' | translate }}</span>
+                }
+                <!-- <PasswordValidationError /> -->
+            </ng-template>
+        </nz-form-control>
+    </nz-form-item>
+    <nz-form-item class="ck-login-form-item">
+        <label nz-checkbox formControlName="rememberMe" class="remember">
+            <span class="ck-login-form-text">{{ 'CK.BasicLogin.RememberMe.Label' | translate }}</span>
+        </label>
+        <!-- <PasswordLost /> -->
+    </nz-form-item>
+</form>
+<button class="login-form-button" nz-button type="submit" nzType="primary" nzSize="large" [disabled]="loginForm.invalid" (click)="submit()">
+    <span class="text">{{ 'Button.Login' | translate }}</span>
+</button>
