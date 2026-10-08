@@ -10,6 +10,18 @@ app.UseCrisAuthentication();   // Before UseCris().
 app.UseCris();
 ```
 
+## One authentication stack per application
+
+This package coexists with the old stack (WebFrontAuth) in the repositories, but an application uses one of them:
+
+| Combination | Refused by |
+|---|---|
+| CK.Cris.Auth (old) + CK.Cris.Authentication (new) | the setup: both define `CK.Auth.CrisAuthenticationService` (the generated code doesn't compile). |
+| CK.AspNet.Auth (WebFrontAuth) + this package | `UseCrisAuthentication()` throws at startup (the `IStObjMap` features contain `CK.AspNet.Auth`). |
+| CK.Ng.AspNet.Auth + CK.Ng.Cris.AspNet.Authentication | the setup: the private page and the user info box are single components. |
+
+The other old packages depend on one of these.
+
 ## Routes
 
 | Route | What |

@@ -20,6 +20,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
+using AuthLevel = CK.Core.AuthLevel;
 
 namespace CK.Cris.AspNet.Authentication.Tests;
 
@@ -136,7 +137,7 @@ public class HttpAuthenticationTests
 {
     internal static Task<RunningAspNetServer> StartServerAsync() => StartAsync();
 
-    static async Task<RunningAspNetServer> StartAsync( bool withRelay = false, string? target = null )
+    static async Task<RunningAspNetServer> StartAsync( bool withRelay = false, string? target = null, bool withOldStack = false )
     {
         target ??= TestHelper.GetTypeScriptInlineTargetProjectPath( "StartAsync" );
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
@@ -166,6 +167,7 @@ public class HttpAuthenticationTests
                                               typeof( IAuthAmbientValues ),
                                               typeof( ICultureAmbientValues ) );
         if( withRelay ) configuration.FirstBinPath.Types.Add( typeof( IAuthenticationSessionRelay ), typeof( FakeRelay ) );
+        if( withOldStack ) configuration.FirstBinPath.Types.Add( typeof( CK.AspNet.Auth.AuthenticationInfoTokenService ), typeof( StdAuthenticationTypeSystem ) );
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( target, typeof( IWhoAmIQCommand ), typeof( IWeakLoginCommand ), typeof( ILogoutSessionCommand ) );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
         var builder = WebApplication.CreateSlimBuilder();
@@ -255,6 +257,17 @@ public class HttpAuthenticationTests
         // An undeclared route accepts no command.
         (await PostTextAsync( "/.cris/other", Create<IWhoAmIQCommand>( server ) )).ShouldContain( "must be sent to \\u0027/.cris\\u0027" );
         (await PostTextAsync( "/.cris", Create<IWhoAmIQCommand>( server ) )).ShouldNotContain( "must be sent to" );
+    }
+
+    [Test]
+    public async Task the_old_stack_and_the_new_one_cannot_run_together_Async()
+    {
+        // The setup succeeds (CK.AspNet.Auth alone doesn't conflict with the new types): the application refuses to start.
+        var ex = await Should.ThrowAsync<InvalidOperationException>( async () =>
+        {
+            await using var server = await StartAsync( withOldStack: true );
+        } );
+        ex.Message.ShouldContain( "old authentication stack (CK.AspNet.Auth)" );
     }
 
     /// <summary>
