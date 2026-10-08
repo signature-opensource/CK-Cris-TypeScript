@@ -37,6 +37,7 @@ public partial class CrisAspNetService : ISingletonAutoService
     internal readonly PocoDirectory _pocoDirectory;
     readonly IPocoFactory<ICrisCallResult> _resultFactory;
     readonly IPocoFactory<ICrisResultError> _crisErrorResultFactory;
+    readonly ICrisRouteGuard[] _routeGuards;
 
     /// <summary>
     /// Initializes a new <see cref="CrisAspNetService"/>.
@@ -46,17 +47,20 @@ public partial class CrisAspNetService : ISingletonAutoService
     /// <param name="backgroundExecutor">The background executor service.</param>
     /// <param name="resultFactory">The AspNet result factory.</param>
     /// <param name="errorResultFactory">The Cris error factory.</param>
+    /// <param name="routeGuards">The route guards.</param>
     public CrisAspNetService( PocoDirectory poco,
                               RawCrisReceiver validator,
                               CrisBackgroundExecutorService backgroundExecutor,
                               IPocoFactory<ICrisCallResult> resultFactory,
-                              IPocoFactory<ICrisResultError> errorResultFactory )
+                              IPocoFactory<ICrisResultError> errorResultFactory,
+                              IEnumerable<ICrisRouteGuard> routeGuards )
     {
         _pocoDirectory = poco;
         _validator = validator;
         _backgroundExecutor = backgroundExecutor;
         _resultFactory = resultFactory;
         _crisErrorResultFactory = errorResultFactory;
+        _routeGuards = routeGuards.ToArray();
     }
 
     /// <summary>
@@ -71,12 +75,19 @@ public partial class CrisAspNetService : ISingletonAutoService
     /// <param name="request">The http request.</param>
     /// <param name="reader">The payload reader.</param>
     /// <param name="currentCultureInfo">Optional current culture.</param>
+    /// <param name="readOptions">Optional read options.</param>
+    /// <param name="executeOverride">
+    /// Optional execution override, called once the command is successfully validated: when it returns a task, the command
+    /// is not executed here and the task's result is the command result. It returns null to let the command be executed here.
+    /// (The authentication relays the session commands to a remote authentication center this way.)
+    /// </param>
     /// <returns>The command result and the <see cref="ExchangeableRuntimeFilter.Name"/> to use to send the response.</returns>
     public async Task<(ICrisCallResult Result, string TypeFilterName)> HandleRequestAsync( IActivityMonitor monitor,
                                                                                            HttpRequest request,
                                                                                            CommandRequestReader reader,
                                                                                            CurrentCultureInfo? currentCultureInfo = null,
-                                                                                           PocoJsonImportOptions? readOptions = null )
+                                                                                           PocoJsonImportOptions? readOptions = null,
+                                                                                           Func<IAbstractCommand, Task<object?>?>? executeOverride = null )
     {
         // There is no try catch here and this is intended. An unhandled exception here
         // is an Internal Server Error that should bubble up.
@@ -97,6 +108,22 @@ public partial class CrisAspNetService : ISingletonAutoService
             {
                 // No read error => no validation error (and we have a command).
                 Throw.DebugAssert( readResult.Command != null );
+                // The route guards: is this command accepted on this route?
+                foreach( var g in _routeGuards )
+                {
+                    var refused = g.Check( request.Path, readResult.Command );
+                    if( refused != null )
+                    {
+                        monitor.Warn( $"Command '{readResult.Command.CrisPocoModel.PocoName}' refused on '{request.Path}': {refused}" );
+                        readResult.ValidationMessages.Error( refused, "Cris.AspNet.RouteRefused" );
+                        result = CreateValidationErrorResult( readResult.ValidationMessages.UserMessages, null );
+                        break;
+                    }
+                }
+            }
+            if( result == null )
+            {
+                Throw.DebugAssert( readResult.Command != null );
                 // Incoming command validation.
                 CrisValidationResult validation = await _validator.IncomingValidateAsync( monitor, requestServices, readResult.Command );
                 allValidationMessages = allValidationMessages.Concat( validation.ValidationMessages );
@@ -106,7 +133,13 @@ public partial class CrisAspNetService : ISingletonAutoService
                 }
                 ambientServiceHub = validation.AmbientServiceHub;
             }
-            // No result so far: incoming validation succeeded.
+            // No result so far: incoming validation succeeded. The execution may be overridden.
+            if( result == null && executeOverride?.Invoke( readResult.Command! ) is Task<object?> overridden )
+            {
+                result = _resultFactory.Create();
+                result.Result = await overridden;
+                if( allValidationMessages.Any() ) result.ValidationMessages = allValidationMessages.ToList();
+            }
             if( result == null )
             {
                 Throw.DebugAssert( readResult.Command != null && readResult.TypeFilterName != null );

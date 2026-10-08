@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.Testing.AspNetServer" Version="23.0.0" />
+    <PackageReference Include="CK.Testing.TypeScriptEngine" Version="2.0.1-0.cris-auth.0.ci.3" />
+    <PackageReference Include="CK.IO.Authentication.Weak" Version="2.0.1-0.cris-auth.0.ci.9" />
+    <PackageReference Include="CK.Testing.NUnit" Version="17.0.1-0.cris-auth.0.ci.3" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="6.3.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\CK.Cris.AspNet.Authentication\CK.Cris.AspNet.Authentication.csproj" />
+    <ProjectReference Include="..\..\CK.Cris.AspNet.Engine\CK.Cris.AspNet.Engine.csproj" />
+  </ItemGroup>
+</Project>
