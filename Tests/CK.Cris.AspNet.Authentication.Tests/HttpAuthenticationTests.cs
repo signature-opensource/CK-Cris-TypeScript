@@ -112,6 +112,8 @@ public sealed class FakeRelay : IAuthenticationSessionRelay
 [TestFixture]
 public class HttpAuthenticationTests
 {
+    internal static Task<RunningAspNetServer> StartServerAsync() => StartAsync();
+
     static async Task<RunningAspNetServer> StartAsync( bool withRelay = false )
     {
         var target = TestHelper.GetTypeScriptInlineTargetProjectPath();
@@ -253,5 +255,42 @@ public class HttpAuthenticationTests
         var r = await PostAsync( server, "/.cris/auth", Create<IWeakLoginCommand>( server, c => c.WeakActorName = "Operator" ) );
         ((ISessionResult)r.Result.ShouldNotBeNull()).Token.ShouldBe( "relayed" );
         FakeWeakProvider.Called.ShouldBe( 0, "Relayed: not executed here." );
+    }
+}
+
+[TestFixture]
+public class HttpFixesTests
+{
+    [Test]
+    public async Task cris_requires_JSON_and_answers_JSON_without_sniffing_Async()
+    {
+        await using var server = await HttpAuthenticationTests.StartServerAsync();
+        using var http = new HttpClient() { BaseAddress = new Uri( server.ServerAddress ) };
+        var json = """["CK.Cris.AspNet.Authentication.Tests.IWhoAmIQCommand",{}]""";
+
+        var plain = await http.PostAsync( "/.cris", new StringContent( json, Encoding.UTF8, "text/plain" ) );
+        plain.StatusCode.ShouldBe( HttpStatusCode.UnsupportedMediaType, "A text/plain POST is sent cross-site without preflight." );
+
+        var ok = await http.PostAsync( "/.cris", new StringContent( json, Encoding.UTF8, "application/json" ) );
+        ok.StatusCode.ShouldBe( HttpStatusCode.OK );
+        ok.Content.Headers.ContentType.ShouldNotBeNull().MediaType.ShouldBe( "application/json" );
+        ok.Headers.GetValues( "X-Content-Type-Options" ).ShouldBe( ["nosniff"] );
+    }
+
+    [Test]
+    public async Task a_request_body_that_cannot_be_read_is_never_logged_Async()
+    {
+        await using var server = await HttpAuthenticationTests.StartServerAsync();
+        using var http = new HttpClient() { BaseAddress = new Uri( server.ServerAddress ) };
+        using var logs = CK.Monitoring.GrandOutput.Default.ShouldNotBeNull().CreateMemoryCollector( 1000 );
+        // A broken login: the password must not appear in the logs.
+        var broken = """["CK.IO.Authentication.Weak.IWeakLoginCommand",{"weakActorName":"the-secret-value-3712",""";
+        var r = await http.PostAsync( "/.cris/auth", new StringContent( broken, Encoding.UTF8, "application/json" ) );
+        r.StatusCode.ShouldBe( HttpStatusCode.OK );
+        (await r.Content.ReadAsStringAsync()).ShouldContain( "Unable to read Command Poco from request body" );
+        await Task.Delay( 200 );
+        var texts = logs.ExtractCurrentTexts();
+        texts.ShouldContain( t => t.Contains( "Unable to read Command Poco from request body" ), "The error is logged..." );
+        texts.ShouldNotContain( t => t.Contains( "the-secret-value-3712" ), "...but never the body." );
     }
 }

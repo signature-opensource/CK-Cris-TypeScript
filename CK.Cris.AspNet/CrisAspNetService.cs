@@ -256,31 +256,10 @@ public partial class CrisAspNetService : ISingletonAutoService
             catch( Exception ex )
             {
                 messageCollector.Error( $"Unable to read Command Poco from request body (byte length = {length}).", "Cris.AspNet.ReadCommandFailed" );
+                // The body is never logged: it may contain sensitive data (a login password for instance).
                 using var gError = monitor.OpenError( messageCollector.UserMessages[^1].Message.CodeString, ex );
-                var (body, error) = ReadBodyTextOnError( buffer.GetReadOnlySequence() );
-                if( body != null )
-                {
-                    monitor.Trace( body );
-                }
-                else
-                {
-                    monitor.Error( "Error while tracing request body.", error );
-                }
                 return new ReadResult( null, CreateValidationErrorResult( messageCollector.UserMessages, gError.GetLogKeyString() ), readOptions.TypeFilterName, messageCollector );
             }
-        }
-
-        static (string? B, Exception? E) ReadBodyTextOnError( in ReadOnlySequence<byte> buffer )
-        {
-            try
-            {
-                return (Encoding.UTF8.GetString( buffer ), null);
-            }
-            catch( Exception ex )
-            {
-                return (null, ex);
-            }
-
         }
     }
 

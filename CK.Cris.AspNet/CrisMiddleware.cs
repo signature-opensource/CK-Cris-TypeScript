@@ -1,6 +1,7 @@
 using CK.Core;
 using CK.Poco.Exc.Json;
 using Microsoft.AspNetCore.Http;
+using System;
 using System.Threading.Tasks;
 
 namespace CK.Cris.AspNet;
@@ -41,11 +42,17 @@ public class CrisMiddleware
             {
                 ctx.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
             }
+            else if( !remainder.StartsWithSegments( _netPath ) && !IsJsonContent( ctx.Request ) )
+            {
+                // A text/plain or form POST is a "simple" request that a browser sends cross-site without preflight.
+                ctx.Response.StatusCode = StatusCodes.Status415UnsupportedMediaType;
+            }
             else
             {
                 ctx.Response.StatusCode = 200;
+                SetJsonResponseHeaders( ctx.Response );
                 // Front applications uses /.cris.
-                // HttpCrisSender uses /.cris/net path.
+                // HttpCrisSender uses /.cris/net path (legacy: it disappears with the CK.Cris.HttpSender).
                 bool isNetPath = remainder.StartsWithSegments( _netPath );
 
                 // For front applications the TypeFilterName is or starts with "TypeScript", the optional "TypeFilterName" query string 
@@ -101,6 +108,29 @@ public class CrisMiddleware
         {
             await _next( ctx );
         }
+    }
+
+    /// <summary>
+    /// Gets whether the request content is JSON ("application/json", with any parameter).
+    /// </summary>
+    /// <param name="request">The request.</param>
+    /// <returns>True if the request content is JSON.</returns>
+    public static bool IsJsonContent( HttpRequest request )
+    {
+        var t = request.ContentType;
+        return t != null && (t.Equals( "application/json", StringComparison.OrdinalIgnoreCase )
+                             || t.StartsWith( "application/json;", StringComparison.OrdinalIgnoreCase ));
+    }
+
+    /// <summary>
+    /// Sets the headers of a JSON response: its Content-Type and "X-Content-Type-Options: nosniff" (the browser must not
+    /// guess another type).
+    /// </summary>
+    /// <param name="response">The response.</param>
+    public static void SetJsonResponseHeaders( HttpResponse response )
+    {
+        response.ContentType = "application/json; charset=utf-8";
+        response.Headers["X-Content-Type-Options"] = "nosniff";
     }
 
 }

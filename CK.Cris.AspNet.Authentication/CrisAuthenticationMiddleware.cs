@@ -131,13 +131,14 @@ public sealed class CrisAuthenticationMiddleware
             ctx.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
             return;
         }
-        if( ctx.Request.ContentType == null || !ctx.Request.ContentType.StartsWith( "application/json", StringComparison.OrdinalIgnoreCase ) )
+        if( !CrisMiddleware.IsJsonContent( ctx.Request ) )
         {
             ctx.Response.StatusCode = StatusCodes.Status415UnsupportedMediaType;
             return;
         }
         var relay = services.GetService<IAuthenticationSessionRelay>();
         ctx.Response.StatusCode = 200;
+        CrisMiddleware.SetJsonResponseHeaders( ctx.Response );
         var (result, typeFilterName) = await _service.HandleRequestAsync( monitor,
                                                                           ctx.Request,
                                                                           CrisAspNetService.StandardReadCommandAsync,
