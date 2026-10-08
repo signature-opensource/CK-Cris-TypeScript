@@ -1,3 +1,4 @@
+using CK.Auth;
 using CK.Core;
 
 namespace CK.Cris.AspNet.Authentication;
@@ -17,5 +18,7 @@ public sealed class HttpAuthenticationContext
     /// <summary>
     /// Gets the session endpoint of the request. Null outside of "/.cris".
     /// </summary>
-    public HttpSessionEndpoint? Endpoint { get; internal set; }
+    public IAuthenticationSessionEndpoint? Endpoint => HttpEndpoint;
+
+    internal HttpSessionEndpoint? HttpEndpoint { get; set; }
 }

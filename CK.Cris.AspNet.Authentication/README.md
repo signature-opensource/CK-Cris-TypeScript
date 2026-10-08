@@ -36,7 +36,7 @@ Every request to `/.cris*` must come from the same origin ([`CrisAuthenticationM
 is not sent by a browser (no cross-site risk) and is accepted. This check is mandatory: the cookies are `SameSite=Strict`,
 which a sibling sub-domain bypasses.
 
-## The cookies ([`HttpSessionEndpoint`](HttpSessionEndpoint.cs))
+## The cookies ([`CrisAuthenticationCookies`](CrisAuthenticationCookies.cs))
 
 | Cookie | Path | Holds |
 |---|---|---|

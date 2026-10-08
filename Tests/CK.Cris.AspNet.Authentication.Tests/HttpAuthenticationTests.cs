@@ -212,12 +212,12 @@ public class HttpAuthenticationTests
         // Login on "/.cris/auth".
         var r = await client.PostJsonAsync( "/.cris/auth?UsePascalCase", ToJson( server, Create<IWeakLoginCommand>( server, c => c.WeakActorName = "Operator" ) ) );
         var setCookies = r.Headers.GetValues( "Set-Cookie" ).ToList();
-        var binding = setCookies.Single( c => c.StartsWith( HttpSessionEndpoint.BindingCookieName + "=" ) ).ToLowerInvariant();
+        var binding = setCookies.Single( c => c.StartsWith( CrisAuthenticationCookies.BindingCookieName + "=" ) ).ToLowerInvariant();
         binding.ShouldContain( "path=/.cris;" );
         binding.ShouldContain( "httponly" );
         binding.ShouldContain( "samesite=strict" );
         binding.ShouldContain( "expires=", customMessage: "RememberMe: persistent cookies." );
-        setCookies.Single( c => c.StartsWith( HttpSessionEndpoint.RefreshCookieName + "=" ) ).ToLowerInvariant().ShouldContain( "path=/.cris/auth" );
+        setCookies.Single( c => c.StartsWith( CrisAuthenticationCookies.RefreshCookieName + "=" ) ).ToLowerInvariant().ShouldContain( "path=/.cris/auth" );
         var login = (ISessionResult)(await ReadResultAsync( server, r )).Result.ShouldNotBeNull();
         login.Info.UnsafeActor.ActorName.ShouldBe( "Operator" );
 

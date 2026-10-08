@@ -10,50 +10,25 @@ using System.Text;
 namespace CK.Cris.AspNet.Authentication;
 
 /// <summary>
-/// The session side of the HTTP front (<see cref="IAuthenticationSessionEndpoint"/>): the session secrets are in two cookies.
-/// <list type="bullet">
-///   <item>
-///   The <b>binding</b> cookie (<see cref="BindingCookieName"/>, <c>Path=/.cris</c>) holds the binding secret: every
-///   authenticated request presents it, and a bearer token is accepted only with the binding secret of its session.
-///   </item>
-///   <item>
-///   The <b>refresh</b> cookie (<see cref="RefreshCookieName"/>, <c>Path=/.cris/auth</c>) holds the session key and the
-///   refresh secret: only the session commands see it.
-///   </item>
-/// </list>
-/// Both are <c>HttpOnly</c>, <c>SameSite=Strict</c>, host-only and <c>Secure</c> (except over http on a loopback address,
-/// for the development). They are persistent when the session is remembered, session cookies otherwise.
+/// The session side of the HTTP front (<see cref="IAuthenticationSessionEndpoint"/>): the session secrets are in two cookies
+/// (see <see cref="CrisAuthenticationCookies"/>).
 /// <para>
 /// The secrets are generated here and never leave this endpoint: the authentication center only knows their hashes
 /// (base64url SHA-256 of the secret).
 /// </para>
 /// <para>
-/// This is not an automatic service: the endpoint of a request is created by the <see cref="CrisAuthenticationMiddleware"/>
+/// This is internal on purpose: an implementation of a <see cref="ScopedContainerConfiguredServiceAttribute"/> interface is
+/// provided by its endpoint, never built by the DI. The endpoint of a request is created by the <see cref="CrisAuthenticationMiddleware"/>
 /// and provided by the <see cref="HttpAuthenticationContext"/> (see <see cref="Microsoft.Extensions.DependencyInjection.CrisAuthenticationExtensions.AddCrisAuthentication"/>).
+/// A public class would be registered by the type discovery as soon as this assembly is registered.
 /// </para>
 /// </summary>
-[ExcludedCKType]
-public sealed class HttpSessionEndpoint : IAuthenticationSessionEndpoint
+sealed class HttpSessionEndpoint : IAuthenticationSessionEndpoint
 {
-    /// <summary>
-    /// The name of the binding cookie.
-    /// </summary>
-    public const string BindingCookieName = "ck-auth-binding";
-
-    /// <summary>
-    /// The name of the refresh cookie.
-    /// </summary>
-    public const string RefreshCookieName = "ck-auth-refresh";
-
-    /// <summary>
-    /// The path of the binding cookie.
-    /// </summary>
-    public const string BindingCookiePath = "/.cris";
-
-    /// <summary>
-    /// The path of the refresh cookie.
-    /// </summary>
-    public const string RefreshCookiePath = "/.cris/auth";
+    const string BindingCookieName = CrisAuthenticationCookies.BindingCookieName;
+    const string RefreshCookieName = CrisAuthenticationCookies.RefreshCookieName;
+    const string BindingCookiePath = CrisAuthenticationCookies.BindingCookiePath;
+    const string RefreshCookiePath = CrisAuthenticationCookies.RefreshCookiePath;
 
     const char _keySeparator = '~';
 

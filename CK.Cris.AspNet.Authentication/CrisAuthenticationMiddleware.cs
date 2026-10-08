@@ -72,7 +72,7 @@ public sealed class CrisAuthenticationMiddleware
         var services = ctx.RequestServices;
         var auth = services.GetRequiredService<HttpAuthenticationContext>();
         var endpoint = new HttpSessionEndpoint( ctx );
-        auth.Endpoint = endpoint;
+        auth.HttpEndpoint = endpoint;
         auth.Info = await AuthenticateAsync( monitor, services, endpoint );
         if( ctx.Request.Path == _authPath )
         {
