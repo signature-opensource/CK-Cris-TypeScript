@@ -55,6 +55,33 @@ authentication center package) **only if it also presents the binding secret of 
 cannot be used from another browser. Otherwise the request is anonymous. The authentication of the request is the scoped
 `AuthenticationInfo` (see [`HttpAuthenticationContext`](HttpAuthenticationContext.cs)).
 
+## The TypeScript client: `AuthService`
+
+The package ships a framework-free [`AuthService`](Res/AuthService.ts) on top of the generated `HttpCrisEndpoint`:
+
+```ts
+const ep = new HttpCrisEndpoint( axios );
+const auth = await AuthService.createAsync( ep );
+// A session command is sent like any other command: the AuthService follows it.
+await ep.sendAsync( new BasicLoginCommand( "Alice", "secret", true ) );
+auth.actor.actorName; // "Alice"
+```
+
+- **The endpoint updates the state.** The `AuthService` registers a `HttpCrisEndpointHook`: it adds the bearer token to
+  every command (`/.cris/auth` included: the impersonation reads the current authentication), and it applies the result
+  of every session command, whoever sends it. There is no `login( ... )` method: the application sends the login
+  command of its choice.
+- **What changes the state:** a successful `SessionResult` (a new token); a logout; a failed refresh (the server has
+  cleared the session). A failed login or impersonation changes nothing.
+- **The token is cached in `localStorage`** and shared by the tabs (the `storage` event). Every session command rotates
+  the session secrets (the cookies), so a tab with an old token would be anonymous. The refreshes are serialized across
+  the tabs (`navigator.locks`): a tab that waited adopts the token of the other one. At load, the cached token is used
+  when it has not expired, otherwise a refresh is sent (the refresh cookie may be valid).
+- **The levels are derived:** `level`/`actualLevel` apply the expirations; `actor`/`actualActor` are the anonymous below
+  `Normal` (`authenticationInfo.unsafeActor` is the explicit access to an unsafe identity).
+- **Helpers:** `refresh()`, `logout()`, `impersonate( actor )`, `clearImpersonation()`, `addOnChange` /
+  `removeOnChange`, `close()`. After every change, the ambient values of the endpoint are updated.
+
 ## Not yet
 
 - The remote logins (OIDC): `IStartLoginCommand`, the challenge and the callback.

@@ -1,0 +1,31 @@
+{
+  "resolutions": {
+    "@yarnpkg/core": "4.9.1"
+  },
+  "name": "typescript_authservice",
+  "private": true,
+  "packageManager": "yarn@4.8.1",
+  "scripts": {
+    "ck-watch": "dotnet \"$PROJECT_CWD/../../bin/Debug/net10.0/CK.TypeScript.LiveEngine.dll\"",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@types/jest": "^30",
+    "@types/luxon": "^3.6.2",
+    "@types/node": "^26.6.4",
+    "@yarnpkg/sdks": "^3.3.1",
+    "axios": "^1.20",
+    "jest": "^30.5.2",
+    "jest-environment-jsdom": "^30.5.2",
+    "jest-util": "^30.5.1",
+    "ts-jest": "^29.4.14",
+    "typescript": "=5.4.5"
+  },
+  "dependencies": {
+    "luxon": "^3.5"
+  },
+  "ckVersion": 1,
+  "peerDependencies": {
+    "axios": "^1.20"
+  }
+}

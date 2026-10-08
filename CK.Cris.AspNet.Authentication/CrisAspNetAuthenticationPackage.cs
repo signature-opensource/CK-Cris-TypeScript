@@ -8,9 +8,18 @@ namespace CK.Cris.AspNet.Authentication;
 /// <summary>
 /// The package of the HTTP front of the authentication. It declares the route of the session commands
 /// (<see cref="ICommandAuthenticationSession"/>): <see cref="AuthRoute"/>.
+/// <para>
+/// Its TypeScript side is the framework-free AuthService: the session state is updated by a hook on the HttpCrisEndpoint,
+/// so any session command sent through the endpoint has its full effect.
+/// </para>
 /// </summary>
 [TypeScriptPackage]
 [CrisRoute<ICommandAuthenticationSession>( AuthRoute )]
+[RegisterTypeScriptType( typeof( IRefreshSessionCommand ) )]
+[RegisterTypeScriptType( typeof( ILogoutSessionCommand ) )]
+[RegisterTypeScriptType( typeof( IImpersonateCommand ) )]
+[RegisterTypeScriptType( typeof( IClearImpersonationCommand ) )]
+[TypeScriptFile( "AuthService.ts", "AuthService" )]
 public class CrisAspNetAuthenticationPackage : TypeScriptPackage
 {
     /// <summary>

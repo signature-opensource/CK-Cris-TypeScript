@@ -66,18 +66,26 @@ public sealed class FakeOpener : IAuthenticationSessionOpener
         {
             return ValueTask.FromResult( command.CreateResult( r => r.Success = false ) );
         }
+        return ValueTask.FromResult( IssueOperator( _endpoint, command, rememberMe ) );
+    }
+
+    /// <summary>
+    /// Issues a session (new secrets and a new token) for the "Operator" weak actor.
+    /// </summary>
+    internal static ISessionResult IssueOperator( IAuthenticationSessionEndpoint endpoint, ICommand<ISessionResult> command, bool rememberMe )
+    {
         var utcNow = DateTime.UtcNow;
-        var proof = _endpoint.Issue( "42.the-session", rememberMe, utcNow.AddHours( 1 ) );
-        var actor = new ActorInfo( 42, name, AuthLevel.Unsafe, [new SchemeInfo( ActorInfo.WeakScheme, utcNow )] );
+        var proof = endpoint.Issue( "42.the-session", rememberMe, utcNow.AddHours( 1 ) );
+        var actor = new ActorInfo( 42, "Operator", AuthLevel.Unsafe, [new SchemeInfo( ActorInfo.WeakScheme, utcNow )] );
         var info = AuthenticationInfo.Create( actor, utcNow.AddHours( 1 ), null, "D", utcNow );
         var token = "token-" + Guid.NewGuid().ToString( "N" );
         FakeTokenReader.Tokens[token] = new AuthenticationTokenData( info, proof.BindingSecretHash );
-        return ValueTask.FromResult( command.CreateResult( r =>
+        return command.CreateResult( r =>
         {
             r.Info.InitializeFrom( info );
             r.Token = token;
             r.RememberMe = rememberMe;
-        } ) );
+        } );
     }
 }
 
@@ -94,6 +102,20 @@ public sealed class FakeWeakProvider : ISingletonAutoService
 
     [CommandHandler]
     public void Handle( ILogoutSessionCommand cmd, IAuthenticationSessionEndpoint endpoint ) => endpoint.Clear();
+
+    /// <summary>
+    /// The refresh: a session is presented (the cookies) or it fails and the endpoint is cleared, like the AuthCenter does.
+    /// </summary>
+    [CommandHandler]
+    public ISessionResult Handle( IRefreshSessionCommand cmd, IAuthenticationSessionEndpoint endpoint )
+    {
+        if( endpoint.PresentedProof == null )
+        {
+            endpoint.Clear();
+            return cmd.CreateResult( r => r.Success = false );
+        }
+        return FakeOpener.IssueOperator( endpoint, cmd, rememberMe: true );
+    }
 }
 
 /// <summary>
@@ -114,9 +136,9 @@ public class HttpAuthenticationTests
 {
     internal static Task<RunningAspNetServer> StartServerAsync() => StartAsync();
 
-    static async Task<RunningAspNetServer> StartAsync( bool withRelay = false )
+    static async Task<RunningAspNetServer> StartAsync( bool withRelay = false, string? target = null )
     {
-        var target = TestHelper.GetTypeScriptInlineTargetProjectPath();
+        target ??= TestHelper.GetTypeScriptInlineTargetProjectPath( "StartAsync" );
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CrisAspNetService ),
                                               typeof( CrisAspNetAuthenticationPackage ),
@@ -134,9 +156,15 @@ public class HttpAuthenticationTests
                                               typeof( IWhoAmIQCommand ),
                                               typeof( IWeakLoginCommand ),
                                               typeof( ILogoutSessionCommand ),
+                                              typeof( IRefreshSessionCommand ),
+                                              typeof( IImpersonateCommand ),
+                                              typeof( IClearImpersonationCommand ),
                                               typeof( ISessionResult ),
                                               typeof( IAuthenticationInfoPoco ),
-                                              typeof( IActorInfoPoco ) );
+                                              typeof( IActorInfoPoco ),
+                                              typeof( CK.Cris.AmbientValues.AmbientValuesService ),
+                                              typeof( IAuthAmbientValues ),
+                                              typeof( ICultureAmbientValues ) );
         if( withRelay ) configuration.FirstBinPath.Types.Add( typeof( IAuthenticationSessionRelay ), typeof( FakeRelay ) );
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( target, typeof( IWhoAmIQCommand ), typeof( IWeakLoginCommand ), typeof( ILogoutSessionCommand ) );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
@@ -227,6 +255,22 @@ public class HttpAuthenticationTests
         // An undeclared route accepts no command.
         (await PostTextAsync( "/.cris/other", Create<IWhoAmIQCommand>( server ) )).ShouldContain( "must be sent to \\u0027/.cris\\u0027" );
         (await PostTextAsync( "/.cris", Create<IWhoAmIQCommand>( server ) )).ShouldNotContain( "must be sent to" );
+    }
+
+    /// <summary>
+    /// Runs the TypeScript tests of the AuthService (src/*.spec.ts) against this server: the jsdom environment of the tests
+    /// has the server's origin, so the cookies and the same-origin check work as in a browser.
+    /// </summary>
+    [Test]
+    public async Task TypeScript_AuthService_Async()
+    {
+        var target = TestHelper.GetTypeScriptInlineTargetProjectPath();
+        await using var server = await StartAsync( target: target );
+        await using var runner = TestHelper.CreateTypeScriptRunner( target,
+                                                                    server.ServerAddress,
+                                                                    new System.Collections.Generic.Dictionary<string, string> { { "CRIS_ENDPOINT_URL", server.ServerAddress + "/.cris" } } );
+        await TestHelper.SuspendAsync( resume => resume );
+        runner.Run();
     }
 
     [Test]

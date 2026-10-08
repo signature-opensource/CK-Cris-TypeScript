@@ -704,6 +704,25 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                                     }
                                 };
 
+                                /**
+                                 * A hook on the commands sent by a HttpCrisEndpoint (see HttpCrisEndpoint.addHook).
+                                 * The authentication uses it: it adds the bearer token and updates the session state from the
+                                 * results of the session commands, whoever sends them.
+                                 **/
+                                export interface HttpCrisEndpointHook {
+                                    /**
+                                     * Called before a command is sent (the ambient values command included).
+                                     * @param command The command to send.
+                                     * @returns The headers to add to the request, if any.
+                                     **/
+                                    getHeaders?( command: ICommand<unknown> ): Record<string,string>|undefined;
+                                    /**
+                                     * Called when a command has been executed (or failed), before the sender receives it.
+                                     * @param executed The executed command.
+                                     **/
+                                    onExecuted?( executed: ExecutedCommand<unknown> ): void|Promise<void>;
+                                }
+
                                 """ );
 
             var httpCrisEndPoint = fHttpEndpoint.CreateType( "HttpCrisEndpoint", null, null );
@@ -718,6 +737,7 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                                     #typeFilterName : string;
                                     #crisEndpointUrl : string;
                                     #query : string;
+                                    #hooks : Array<HttpCrisEndpointHook>;
 
                                     /**
                                      * Gets the TypeFilterName that defines the exchangeable set of objects
@@ -747,7 +767,30 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                                         const q = crisEndpointUrl.indexOf('?');
                                         this.#crisEndpointUrl = q < 0 ? crisEndpointUrl : crisEndpointUrl.substring( 0, q );
                                         this.#query = (q < 0 ? "?" : crisEndpointUrl.substring( q ) + "&") + "TypeFilterName=" + typeFilterName;
+                                        this.#hooks = [];
                                         this.axiosConfig = defaultCrisAxiosConfig;
+                                    }
+
+                                    /**
+                                     * Adds a hook on the sent commands. The hooks are called in the order of their registration.
+                                     * @param hook The hook to add.
+                                     */
+                                    public addHook( hook: HttpCrisEndpointHook ): void
+                                    {
+                                        if( this.#hooks.indexOf( hook ) < 0 ) this.#hooks.push( hook );
+                                    }
+
+                                    /**
+                                     * Removes a previously added hook.
+                                     * @param hook The hook to remove.
+                                     * @returns True if the hook has been found and removed, false otherwise.
+                                     */
+                                    public removeHook( hook: HttpCrisEndpointHook ): boolean
+                                    {
+                                        const i = this.#hooks.indexOf( hook );
+                                        if( i < 0 ) return false;
+                                        this.#hooks.splice( i, 1 );
+                                        return true;
                                     }
 
                                     /**
@@ -764,10 +807,31 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
 
                                     protected override async doSendAsync<T>(command: ICommand<T>): Promise<ExecutedCommand<T>>
                                     {
+                                        let headers: Record<string,string>|undefined;
+                                        for( const h of this.#hooks )
+                                        {
+                                            const more = h.getHeaders?.( command );
+                                            if( more ) headers = { ...headers, ...more };
+                                        }
+                                        const executed = await this.#doSendAsync( command, headers );
+                                        for( const h of this.#hooks )
+                                        {
+                                            // A hook error is logged: the sender always receives its ExecutedCommand.
+                                            try { await h.onExecuted?.( executed ); }
+                                            catch( e ) { console.error( "Error in a HttpCrisEndpoint hook.", e ); }
+                                        }
+                                        return executed;
+                                    }
+
+                                    async #doSendAsync<T>( command: ICommand<T>, headers: Record<string,string>|undefined ): Promise<ExecutedCommand<T>>
+                                    {
                                         try
                                         {
                                             const req = JSON.stringify(CTSType.toTypedJson(command));
-                                            const resp = await this.#axios.post(this.getCommandUrl( command ), req, this.axiosConfig);
+                                            const config = headers
+                                                            ? { ...this.axiosConfig, headers: { ...(<object>this.axiosConfig.headers), ...headers } }
+                                                            : this.axiosConfig;
+                                            const resp = await this.#axios.post(this.getCommandUrl( command ), req, config);
                                             const netResult = <CrisCallResult>CTSType["CrisCallResult"].nosj( JSON.parse(resp.data) );
                                             let r = netResult.result;
                                             if( r instanceof CrisResultError ) 
