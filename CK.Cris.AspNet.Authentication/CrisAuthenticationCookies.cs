@@ -36,4 +36,18 @@ public static class CrisAuthenticationCookies
     /// The path of the refresh cookie: the route of the session commands.
     /// </summary>
     public const string RefreshCookiePath = CrisAspNetAuthenticationPackage.AuthRoute;
+
+    /// <summary>
+    /// The name of the remote login cookie: the correlation secret of a remote login in progress (and how it ends: popup
+    /// or inline, the return URL). It is <c>SameSite=Lax</c> (the provider's redirection back is a cross-site navigation:
+    /// a <c>Strict</c> cookie would not be sent), <c>HttpOnly</c>, scoped to the <see cref="RemoteLoginCallbackPath"/>,
+    /// 10 minutes long and deleted by the callback.
+    /// </summary>
+    public const string RemoteLoginCookieName = "ck-auth-login";
+
+    /// <summary>
+    /// The path of the callback of the remote logins: "/.auth/oidc/callback". It is outside "/.cris": it is a cross-site
+    /// GET started by the provider, that the same-origin check of "/.cris" refuses.
+    /// </summary>
+    public const string RemoteLoginCallbackPath = "/.auth/oidc/callback";
 }

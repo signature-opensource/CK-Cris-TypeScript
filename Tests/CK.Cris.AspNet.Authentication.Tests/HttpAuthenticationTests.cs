@@ -14,6 +14,7 @@ using Shouldly;
 using System;
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -120,6 +121,42 @@ public sealed class FakeWeakProvider : ISingletonAutoService
 }
 
 /// <summary>
+/// A fake remote login (what the AuthCenter does with an OpenID Connect scheme): the start prepares the correlation of the
+/// endpoint and returns the provider's URL, the callback checks it and opens a session for the "Operator".
+/// </summary>
+public sealed class FakeRemoteLogin : ISingletonAutoService
+{
+    public static readonly ConcurrentDictionary<string, string> Pending = new();
+    public static string? LastCallbackUrl;
+
+    [CommandHandler]
+    public IList<string> Handle( IGetLoginSchemesQCommand cmd ) => ["Oidc.Test", "Weak"];
+
+    [CommandHandler]
+    public RedirectedUrl Handle( IStartLoginCommand cmd, IAuthenticationSessionEndpoint endpoint )
+    {
+        LastCallbackUrl = endpoint.RemoteLoginCallbackUrl;
+        var state = Guid.NewGuid().ToString( "N" );
+        Pending[state] = endpoint.PrepareRemoteLogin();
+        return new RedirectedUrl( "https://idp.example.com/authorize?state=" + state, cmd.InlineMode );
+    }
+
+    [CommandHandler]
+    public ISessionResult Handle( IRemoteLoginCallbackCommand cmd, IAuthenticationSessionEndpoint endpoint )
+    {
+        if( !Pending.TryRemove( cmd.State, out var hash ) || hash != endpoint.PresentedRemoteLoginHash || cmd.Code != "the-code" )
+        {
+            return cmd.CreateResult( r =>
+            {
+                r.Success = false;
+                r.UserMessages.Add( UserMessage.Error( NormalizedCultureInfo.CodeDefault, "Refused.", "Test.Refused" ) );
+            } );
+        }
+        return FakeOpener.IssueOperator( endpoint, cmd, rememberMe: true );
+    }
+}
+
+/// <summary>
 /// A relay that answers every session command (as a remote authentication center would).
 /// </summary>
 public sealed class FakeRelay : IAuthenticationSessionRelay
@@ -160,6 +197,10 @@ public class HttpAuthenticationTests
                                               typeof( IRefreshSessionCommand ),
                                               typeof( IImpersonateCommand ),
                                               typeof( IClearImpersonationCommand ),
+                                              typeof( IStartLoginCommand ),
+                                              typeof( IRemoteLoginCallbackCommand ),
+                                              typeof( FakeRemoteLogin ),
+                                              typeof( IGetLoginSchemesQCommand ),
                                               typeof( ISessionResult ),
                                               typeof( IAuthenticationInfoPoco ),
                                               typeof( IActorInfoPoco ),
@@ -257,6 +298,113 @@ public class HttpAuthenticationTests
         // An undeclared route accepts no command.
         (await PostTextAsync( "/.cris/other", Create<IWhoAmIQCommand>( server ) )).ShouldContain( "must be sent to \\u0027/.cris\\u0027" );
         (await PostTextAsync( "/.cris", Create<IWhoAmIQCommand>( server ) )).ShouldNotContain( "must be sent to" );
+    }
+
+    // Starts a remote login on "/.cris/auth": returns the provider's URL and the remote login cookie (its "name=value").
+    static async Task<(RedirectedUrl Url, string Cookie, string SetCookie)> StartRemoteLoginAsync( RunningAspNetServer server, bool inline, string? returnUrl = null )
+    {
+        var r = await server.Client.PostJsonAsync( "/.cris/auth?UsePascalCase", ToJson( server, Create<IStartLoginCommand>( server, c =>
+        {
+            c.Scheme = "Oidc.Test";
+            c.InlineMode = inline;
+            c.ReturnUrl = returnUrl;
+        } ) ) );
+        var setCookie = r.Headers.GetValues( "Set-Cookie" ).Single( c => c.StartsWith( CrisAuthenticationCookies.RemoteLoginCookieName + "=" ) );
+        var url = (RedirectedUrl)(await ReadResultAsync( server, r )).Result.ShouldNotBeNull();
+        return (url, setCookie.Substring( 0, setCookie.IndexOf( ';' ) ), setCookie);
+    }
+
+    // The provider redirects the browser to the callback: a navigation, with the remote login cookie only (if any).
+    static async Task<HttpResponseMessage> CallbackAsync( RunningAspNetServer server, string query, string? cookie )
+    {
+        using var http = new HttpClient( new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false } ) { BaseAddress = new Uri( server.ServerAddress ) };
+        using var m = new HttpRequestMessage( HttpMethod.Get, CrisAuthenticationCookies.RemoteLoginCallbackPath + query );
+        m.Headers.Add( "Sec-Fetch-Site", "cross-site" );
+        if( cookie != null ) m.Headers.Add( "Cookie", cookie );
+        return await http.SendAsync( m );
+    }
+
+    static string StateOf( RedirectedUrl url ) => url.Url.Substring( url.Url.IndexOf( "state=" ) + 6 );
+
+    [Test]
+    public async Task a_remote_login_in_a_popup_Async()
+    {
+        await using var server = await StartAsync();
+        var (url, cookie, setCookie) = await StartRemoteLoginAsync( server, inline: false );
+        url.IsInline.ShouldBeFalse();
+        FakeRemoteLogin.LastCallbackUrl.ShouldBe( server.ServerAddress.TrimEnd( '/' ) + "/.auth/oidc/callback" );
+        var c = setCookie.ToLowerInvariant();
+        c.ShouldContain( "path=/.auth/oidc/callback" );
+        c.ShouldContain( "samesite=lax", customMessage: "The provider's redirection back is a cross-site navigation." );
+        c.ShouldContain( "httponly" );
+        c.ShouldContain( "expires=" );
+
+        var r = await CallbackAsync( server, $"?state={StateOf( url )}&code=the-code", cookie );
+        r.StatusCode.ShouldBe( HttpStatusCode.OK );
+        r.Content.Headers.ContentType!.MediaType.ShouldBe( "text/html" );
+        r.Headers.GetValues( "Content-Security-Policy" ).Single().ShouldStartWith( "default-src 'none'; script-src 'nonce-" );
+        r.Headers.GetValues( "Referrer-Policy" ).Single().ShouldBe( "no-referrer" );
+        r.Headers.CacheControl!.NoStore.ShouldBeTrue();
+        var html = await r.Content.ReadAsStringAsync();
+        html.ShouldContain( """{"type":"ck-auth-remote-login","success":true,"error":null}""" );
+        html.ShouldContain( "window.opener.postMessage(" );
+        html.ShouldContain( "window.location.origin" );
+        html.ShouldNotContain( "token", Case.Insensitive, "The page never carries a token." );
+        var setCookies = r.Headers.GetValues( "Set-Cookie" ).ToList();
+        setCookies.ShouldContain( s => s.StartsWith( CrisAuthenticationCookies.BindingCookieName + "=" ), "The session is issued: the client refreshes." );
+        setCookies.ShouldContain( s => s.StartsWith( CrisAuthenticationCookies.RefreshCookieName + "=" ) );
+        setCookies.Single( s => s.StartsWith( CrisAuthenticationCookies.RemoteLoginCookieName + "=" ) ).ShouldContain( "expires=Thu, 01 Jan 1970", customMessage: "Deleted: one use." );
+    }
+
+    [Test]
+    public async Task a_remote_login_inline_Async()
+    {
+        await using var server = await StartAsync();
+        var (url, cookie, _) = await StartRemoteLoginAsync( server, inline: true, returnUrl: "/after?x=1" );
+        url.IsInline.ShouldBeTrue();
+        var r = await CallbackAsync( server, $"?state={StateOf( url )}&code=the-code", cookie );
+        r.StatusCode.ShouldBe( HttpStatusCode.SeeOther );
+        r.Headers.Location!.ToString().ShouldBe( "/after?x=1&ck-auth-login=ok" );
+        r.Headers.GetValues( "Set-Cookie" ).ShouldContain( s => s.StartsWith( CrisAuthenticationCookies.BindingCookieName + "=" ) );
+    }
+
+    [Test]
+    public async Task a_remote_login_can_only_be_completed_by_the_browser_that_started_it_Async()
+    {
+        await using var server = await StartAsync();
+        var (url, _, _) = await StartRemoteLoginAsync( server, inline: false );
+        // No remote login cookie (another browser): refused.
+        var r = await CallbackAsync( server, $"?state={StateOf( url )}&code=the-code", null );
+        var html = await r.Content.ReadAsStringAsync();
+        html.ShouldContain( """{"type":"ck-auth-remote-login","success":false,"error":"Test.Refused"}""" );
+        r.Headers.TryGetValues( "Set-Cookie", out var setCookies );
+        (setCookies ?? []).ShouldNotContain( s => s.StartsWith( CrisAuthenticationCookies.BindingCookieName + "=" ) && !s.Contains( "1970" ) );
+    }
+
+    [Test]
+    public async Task the_return_url_of_an_inline_login_is_a_relative_path_Async()
+    {
+        await using var server = await StartAsync();
+        // A forged remote login cookie with an absolute return URL: the redirection stays on this origin.
+        var forged = CrisAuthenticationCookies.RemoteLoginCookieName + "=secret.i." + System.Buffers.Text.Base64Url.EncodeToString( Encoding.UTF8.GetBytes( "//evil.example.com/" ) );
+        var r = await CallbackAsync( server, "?state=unknown&code=the-code", forged );
+        r.StatusCode.ShouldBe( HttpStatusCode.SeeOther );
+        r.Headers.Location!.ToString().ShouldBe( "/?ck-auth-login=Test.Refused" );
+    }
+
+    [Test]
+    public async Task the_callback_command_cannot_be_sent_by_a_client_Async()
+    {
+        await using var server = await StartAsync();
+        // It is not exchangeable with the clients (not in the "TypeScript" set): it cannot even be read. The middleware also
+        // refuses it explicitly (a second barrier).
+        FakeRemoteLogin.Pending["s"] = "a-hash";
+        var r = await server.Client.PostJsonAsync( "/.cris/auth", ToJson( server, Create<IRemoteLoginCallbackCommand>( server, c => { c.State = "s"; c.Code = "the-code"; } ) ) );
+        (await r.Content.ReadAsStringAsync()).ShouldContain( """{"result":["CrisResultError",{"isValidationError":true""" );
+        FakeRemoteLogin.Pending.ShouldContainKey( "s", "The handler has not been reached." );
+        // The callback answers GET only.
+        using var http = new HttpClient() { BaseAddress = new Uri( server.ServerAddress ) };
+        (await http.PostAsync( CrisAuthenticationCookies.RemoteLoginCallbackPath, new StringContent( "" ) )).StatusCode.ShouldBe( HttpStatusCode.MethodNotAllowed );
     }
 
     [Test]

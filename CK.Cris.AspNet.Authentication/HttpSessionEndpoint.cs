@@ -113,13 +113,86 @@ sealed class HttpSessionEndpoint : IAuthenticationSessionEndpoint
         _context.Response.Cookies.Delete( RefreshCookieName, CreateOptions( RefreshCookiePath, null ) );
     }
 
-    CookieOptions CreateOptions( string path, DateTimeOffset? expires )
+    /// <summary>
+    /// The lifetime of the remote login cookie: 10 minutes (the one of a pending login).
+    /// </summary>
+    public static readonly TimeSpan RemoteLoginLifetime = TimeSpan.FromMinutes( 10 );
+
+    (bool Inline, string? ReturnUrl)? _remoteLoginEnd;
+
+    /// <summary>
+    /// Sets how the remote login that starts ends (see <see cref="PrepareRemoteLogin"/>): only the front needs it.
+    /// </summary>
+    /// <param name="inline">True for an inline login (redirection to the return URL), false for a popup.</param>
+    /// <param name="returnUrl">The relative return URL of an inline login.</param>
+    internal void SetRemoteLoginEnd( bool inline, string? returnUrl ) => _remoteLoginEnd = (inline, returnUrl);
+
+    /// <inheritdoc />
+    public string? RemoteLoginCallbackUrl
+    {
+        get
+        {
+            var r = _context.Request;
+            return $"{r.Scheme}://{r.Host}{r.PathBase}{CrisAuthenticationCookies.RemoteLoginCallbackPath}";
+        }
+    }
+
+    /// <inheritdoc />
+    public string PrepareRemoteLogin()
+    {
+        var secret = NewSecret();
+        var (inline, returnUrl) = _remoteLoginEnd ?? (false, null);
+        var value = secret + '.' + (inline ? 'i' : 'p') + '.' + Base64Url.EncodeToString( Encoding.UTF8.GetBytes( returnUrl ?? "" ) );
+        _context.Response.Cookies.Append( CrisAuthenticationCookies.RemoteLoginCookieName,
+                                          value,
+                                          CreateOptions( CrisAuthenticationCookies.RemoteLoginCallbackPath, DateTimeOffset.UtcNow + RemoteLoginLifetime, SameSiteMode.Lax ) );
+        return Hash( secret );
+    }
+
+    /// <summary>
+    /// Gets the remote login presented by the caller (the remote login cookie): its correlation secret and how it ends.
+    /// The return URL comes from the caller's cookie: it must be checked again before being used.
+    /// </summary>
+    internal (string Secret, bool Inline, string? ReturnUrl)? PresentedRemoteLogin
+    {
+        get
+        {
+            var v = _context.Request.Cookies[CrisAuthenticationCookies.RemoteLoginCookieName];
+            if( v == null ) return null;
+            var parts = v.Split( '.' );
+            if( parts.Length != 3 || parts[0].Length == 0 || (parts[1] != "i" && parts[1] != "p") ) return null;
+            string? returnUrl;
+            try
+            {
+                returnUrl = Encoding.UTF8.GetString( Base64Url.DecodeFromChars( parts[2] ) );
+            }
+            catch( FormatException )
+            {
+                return null;
+            }
+            return (parts[0], parts[1] == "i", returnUrl.Length > 0 ? returnUrl : null);
+        }
+    }
+
+    /// <inheritdoc />
+    public string? PresentedRemoteLoginHash => PresentedRemoteLogin is { } r ? Hash( r.Secret ) : null;
+
+    /// <summary>
+    /// Deletes the remote login cookie (a remote login can be completed once).
+    /// </summary>
+    internal void ClearRemoteLogin()
+    {
+        _context.Response.Cookies.Delete( CrisAuthenticationCookies.RemoteLoginCookieName,
+                                          CreateOptions( CrisAuthenticationCookies.RemoteLoginCallbackPath, null, SameSiteMode.Lax ) );
+    }
+
+    CookieOptions CreateOptions( string path, DateTimeOffset? expires, SameSiteMode sameSite = SameSiteMode.Strict )
     {
         return new CookieOptions
         {
             Path = path,
             HttpOnly = true,
-            SameSite = SameSiteMode.Strict,
+            SameSite = sameSite,
             Secure = _context.Request.IsHttps || !IsLoopback( _context ),
             Expires = expires,
             IsEssential = true

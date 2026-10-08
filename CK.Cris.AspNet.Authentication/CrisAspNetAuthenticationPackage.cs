@@ -19,6 +19,8 @@ namespace CK.Cris.AspNet.Authentication;
 [RegisterTypeScriptType( typeof( ILogoutSessionCommand ) )]
 [RegisterTypeScriptType( typeof( IImpersonateCommand ) )]
 [RegisterTypeScriptType( typeof( IClearImpersonationCommand ) )]
+[RegisterTypeScriptType( typeof( IStartLoginCommand ) )]
+[RegisterTypeScriptType( typeof( IGetLoginSchemesQCommand ) )]
 [TypeScriptFile( "AuthService.ts", "AuthService" )]
 public class CrisAspNetAuthenticationPackage : TypeScriptPackage
 {
