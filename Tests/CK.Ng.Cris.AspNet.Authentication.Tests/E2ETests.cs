@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
@@ -76,6 +77,9 @@ public sealed class FakeLoginHandlers : ISingletonAutoService
 
     [CommandHandler]
     public void Handle( ILogoutSessionCommand cmd, IAuthenticationSessionEndpoint endpoint ) => endpoint.Clear();
+
+    [CommandHandler]
+    public IList<string> Handle( IGetLoginSchemesQCommand cmd ) => ["Basic", "Oidc.Google", "Oidc.Microsoft"];
 }
 
 public class E2ETests

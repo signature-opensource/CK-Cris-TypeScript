@@ -3,6 +3,8 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
 import { AuthService, AuthLevel, HttpCrisEndpoint, BasicLoginCommand, LogoutSessionCommand } from '@local/ck-gen';
 import { NgAuthService } from '@local/ck-gen/CK/Ng/Cris/AspNet/Authentication/NgAuthService';
+import { Login } from '@local/ck-gen/CK/Ng/Cris/AspNet/Authentication/login/login';
+import { provideRouter } from '@angular/router';
 import { BasicLoginForm } from '@local/ck-gen/CK/Ng/Cris/AspNet/Authentication/Basic/basic-login-form/basic-login-form';
 
 // Trick from https://stackoverflow.com/a/77047461/190380
@@ -74,5 +76,31 @@ describe( 'NgCrisAuthenticationPackage', () => {
     expect( ngAuth.actor().actorId ).toBe( 3712 );
     await auth.logout();
     expect( ngAuth.actor().actorId ).toBe( 0 );
+  } );
+} );
+
+describe( 'Login', () => {
+  beforeEach( async () => {
+    localStorage.clear();
+    await TestBed.configureTestingModule( {
+      providers: [...CKGenAppModule.Providers, provideNoopAnimations(), provideRouter( [] )]
+    } ).compileComponents();
+    await TestBed.inject( HttpCrisEndpoint ).sendAsync( new LogoutSessionCommand() );
+    await TestBed.inject( AuthService ).isInitialized;
+  } );
+
+  afterEach( () => TestBed.inject( AuthService ).close() );
+
+  it( 'shows a button per remote scheme', async () => {
+    const fixture = TestBed.createComponent( Login );
+    fixture.autoDetectChanges();
+    // ngOnInit reads the schemes (an async command).
+    for( let i = 0; i < 100 && fixture.componentInstance.remoteSchemes().length === 0; ++i ) await new Promise( r => setTimeout( r, 20 ) );
+    await fixture.whenStable();
+    expect( fixture.componentInstance.remoteSchemes() ).toEqual( ["Oidc.Google", "Oidc.Microsoft"] );
+    const buttons = ( fixture.nativeElement as HTMLElement ).querySelectorAll( "button.ck-login-provider-btn" );
+    expect( buttons.length ).toBe( 2 );
+    expect( buttons[0].textContent ).toContain( "Google" );
+    expect( fixture.componentInstance.getProviderLogoSrc( "Oidc.Google" ) ).toBe( "login-providers/google.png" );
   } );
 } );

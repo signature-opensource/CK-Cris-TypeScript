@@ -1,6 +1,6 @@
 import axios from "axios";
 import { HttpCrisEndpoint, AuthService, AuthLevel, ICommand, SessionResult } from "@local/ck-gen";
-import { WeakLoginCommand, WhoAmIQCommand, LogoutSessionCommand, RefreshSessionCommand } from "@local/ck-gen";
+import { WeakLoginCommand, WhoAmIQCommand, LogoutSessionCommand, RefreshSessionCommand, StartLoginCommand, RedirectedUrl } from "@local/ck-gen";
 
 // Trick from https://stackoverflow.com/a/77047461/190380
 if( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout(20 * 60 * 1000 ); // 20 minutes
@@ -157,5 +157,110 @@ it( 'a logout sent while a refresh is in flight wins, whatever the order of the 
     expect( auth.token ).toBeUndefined();
     expect( localStorage.getItem( "ck-auth" ) ).toBeNull();
     expect( await whoAmIAsync( ep ) ).toBe( "Anonymous" );
+  }
+});
+
+it( 'the login schemes are the ones of the authentication center', async () => {
+  const [, auth] = await newTabAsync();
+  expect( auth.availableSchemes ).toEqual( [] );
+  expect( Array.from( await auth.refreshSchemesAsync() ) ).toEqual( ["Oidc.Test", "Weak"] );
+  expect( Array.from( auth.availableSchemes ) ).toEqual( ["Oidc.Test", "Weak"] );
+});
+
+it( 'back from an inline remote login, the session is refreshed (the cached token is stale)', async () => {
+  const [ep1] = await newTabAsync();
+  await ep1.sendOrThrowAsync( new WeakLoginCommand( "Operator" ) );
+  // The session rotates without updating the cached token (what the remote login callback does: new cookies).
+  await new HttpCrisEndpoint( axios, crisEndpoint ).sendAsync( new RefreshSessionCommand() );
+  // Without the marker, a new page adopts the stale cached token: it is anonymous.
+  const [ep2] = await newTabAsync();
+  expect( await whoAmIAsync( ep2 ) ).toBe( "Anonymous" );
+  // With the marker, the new page refreshes: the session is the new one.
+  window.history.pushState( null, "", "/page?x=1&ck-auth-login=ok" );
+  const sent: ICommand<unknown>[] = [];
+  const [ep3, auth3] = await newTabAsync( sent );
+  expect( sent.some( c => c instanceof RefreshSessionCommand ) ).toBe( true );
+  expect( window.location.search ).toBe( "?x=1" );
+  expect( auth3.remoteLoginError ).toBeUndefined();
+  expect( await whoAmIAsync( ep3 ) ).toBe( "Operator" );
+});
+
+it( 'the error of an inline remote login is available', async () => {
+  window.history.pushState( null, "", "/page?ck-auth-login=Test.Refused" );
+  const [, auth] = await newTabAsync();
+  expect( auth.remoteLoginError ).toBe( "Test.Refused" );
+  expect( window.location.search ).toBe( "" );
+});
+
+it( 'a blocked popup fails the remote login', async () => {
+  const open = jest.spyOn( window, "open" ).mockReturnValue( null );
+  try {
+    const [, auth] = await newTabAsync();
+    expect( await auth.startPopupLogin( "Oidc.Test" ) ).toBe( false );
+    expect( auth.remoteLoginError ).toBe( "Authentication.PopupBlocked" );
+  }
+  finally {
+    open.mockRestore();
+  }
+});
+
+// A tab that records the provider's URL returned to a StartLoginCommand (assigned to the popup).
+async function newRemoteLoginTabAsync(): Promise<[HttpCrisEndpoint, AuthService, () => string]> {
+  const ep = new HttpCrisEndpoint( axios, crisEndpoint );
+  let url = "";
+  ep.addHook( { onExecuted: e => { if( e.command instanceof StartLoginCommand && e.result instanceof RedirectedUrl ) url = e.result.url; } } );
+  const a = await AuthService.createAsync( ep );
+  services.push( a );
+  return [ep, a, () => url];
+}
+
+it( 'a remote login in a popup', async () => {
+  // The "popup" is an iframe: its window is the source of the message posted by the callback page.
+  const frame = document.createElement( "iframe" );
+  document.body.appendChild( frame );
+  const popup = frame.contentWindow!;
+  const open = jest.spyOn( window, "open" ).mockReturnValue( popup );
+  try {
+    const [ep, auth, url] = await newRemoteLoginTabAsync();
+    const login = auth.startPopupLogin( "Oidc.Test" );
+    while( !url() ) await new Promise( r => setTimeout( r, 10 ) );
+    const state = url().substring( url().indexOf( "state=" ) + 6 );
+    // The provider redirects the popup to the callback: the browser presents the remote login cookie, the session is issued.
+    const callback = await axios.get( "/.auth/oidc/callback?state=" + state + "&code=the-code", { baseURL: window.location.origin, responseType: "text" } );
+    expect( callback.data ).toContain( '"success":true' );
+    // The callback page posts its message to the opener.
+    window.dispatchEvent( new MessageEvent( "message", { data: { type: "ck-auth-remote-login", success: true, error: null }, origin: window.location.origin, source: popup } ) );
+    expect( await login ).toBe( true );
+    expect( auth.token ).toBeDefined();
+    expect( await whoAmIAsync( ep ) ).toBe( "Operator" );
+  }
+  finally {
+    open.mockRestore();
+    frame.remove();
+  }
+});
+
+it( 'a message that does not come from the popup is ignored', async () => {
+  const frame = document.createElement( "iframe" );
+  document.body.appendChild( frame );
+  const popup = frame.contentWindow!;
+  const open = jest.spyOn( window, "open" ).mockReturnValue( popup );
+  try {
+    const [, auth, url] = await newRemoteLoginTabAsync();
+    const login = auth.startPopupLogin( "Oidc.Test" );
+    while( !url() ) await new Promise( r => setTimeout( r, 10 ) );
+    // Another window (or origin) cannot end the login.
+    window.dispatchEvent( new MessageEvent( "message", { data: { type: "ck-auth-remote-login", success: true }, origin: window.location.origin, source: window } ) );
+    window.dispatchEvent( new MessageEvent( "message", { data: { type: "ck-auth-remote-login", success: true }, origin: "https://evil.example.com", source: popup } ) );
+    // The popup's own failure ends the login (if one of the messages above had been accepted, the login would succeed).
+    // (The closing of the popup is polled: jsdom doesn't close an iframe's window, it cannot be tested here.)
+    window.dispatchEvent( new MessageEvent( "message", { data: { type: "ck-auth-remote-login", success: false, error: "Authentication.RemoteLoginRefused" }, origin: window.location.origin, source: popup } ) );
+    expect( await login ).toBe( false );
+    expect( auth.remoteLoginError ).toBe( "Authentication.RemoteLoginRefused" );
+    expect( auth.token ).toBeUndefined();
+  }
+  finally {
+    open.mockRestore();
+    frame.remove();
   }
 });

@@ -9,5 +9,11 @@
 
 <div class="ck-login-providers">
     <!-- <BasicLogin /> -->
+    @for ( p of remoteSchemes(); track p ) {
+        <button nz-button nzType="default" class="ck-login-provider-btn" (click)="loginWithProvider( p )">
+            <img class="ck-login-provider-logo" [src]="getProviderLogoSrc( p )" />
+            <span class="ck-login-provider">{{ 'Login.ExternalProvider.ButtonLabel' | translate }} {{ getProviderName( p ) }}</span>
+        </button>
+    }
     <!-- <LoginProviders /> -->
 </div>

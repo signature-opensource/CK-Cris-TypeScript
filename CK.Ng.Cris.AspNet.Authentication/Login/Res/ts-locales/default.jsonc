@@ -1,5 +1,10 @@
 {
+    "Authentication.PopupBlocked": "The login window has been blocked by the browser.",
+    "Authentication.RemoteLoginCorrelation": "This login has not been started here. Please retry.",
+    "Authentication.RemoteLoginExpired": "This login has expired. Please retry.",
+    "Authentication.RemoteLoginRefused": "The login has been refused.",
     "Login.ExternalProvider.ButtonLabel": "Continue with",
     "Login.HeaderSubTitle": "Sign in to access your account.",
+    "Login.RemoteLoginFailed": "The login failed.",
     "Login.Welcome": "Welcome back"
 }

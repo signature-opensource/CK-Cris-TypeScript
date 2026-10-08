@@ -1,5 +1,10 @@
 {
+    "Authentication.PopupBlocked": "La fenêtre de connexion a été bloquée par le navigateur.",
+    "Authentication.RemoteLoginCorrelation": "Cette connexion n'a pas été démarrée ici. Veuillez réessayer.",
+    "Authentication.RemoteLoginExpired": "Cette connexion a expiré. Veuillez réessayer.",
+    "Authentication.RemoteLoginRefused": "La connexion a été refusée.",
     "Login.ExternalProvider.ButtonLabel": "Continuer avec",
     "Login.HeaderSubTitle": "Connectez-vous pour accéder à la plateforme.",
+    "Login.RemoteLoginFailed": "La connexion a échoué.",
     "Login.Welcome": "Bienvenu.e"
 }

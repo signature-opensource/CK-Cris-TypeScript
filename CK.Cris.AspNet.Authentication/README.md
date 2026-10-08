@@ -28,6 +28,7 @@ The other old packages depend on one of these.
 |---|---|
 | `/.cris/auth` | The session commands (`ICommandAuthenticationSession`: logins, refresh, logout, impersonation) and only them. POST with a JSON content only. |
 | `/.cris` | The other commands. A session command is refused here. |
+| `/.auth/oidc/callback` | The callback of the remote logins (see below): a GET, outside `/.cris` (it is a cross-site navigation started by the provider). |
 
 The route is declared once, on the package ([`CrisAspNetAuthenticationPackage`](CrisAspNetAuthenticationPackage.cs)):
 
@@ -54,8 +55,9 @@ which a sibling sub-domain bypasses.
 |---|---|---|
 | `ck-auth-binding` | `/.cris` | The binding secret: every authenticated request presents it. |
 | `ck-auth-refresh` | `/.cris/auth` | The session key and the refresh secret: only the session commands see it. |
+| `ck-auth-login` | `/.auth/oidc/callback` | A remote login in progress: its correlation secret, popup or inline, the return URL. **`SameSite=Lax`** (the provider's redirection back is a cross-site navigation), 10 minutes, deleted by the callback. |
 
-`HttpOnly`, `SameSite=Strict`, host-only, `Secure` (except over http on a loopback address, for the development);
+`HttpOnly`, `SameSite=Strict` (except `ck-auth-login`), host-only, `Secure` (except over http on a loopback address, for the development);
 persistent when the session is remembered. The secrets are generated here: the authentication center only knows their
 hashes (base64url SHA-256). When a session command is relayed, the next secrets are prepared before the relay and their
 hashes travel with the command.
@@ -96,7 +98,29 @@ auth.actor.actorName; // "Alice"
 - **Helpers:** `refresh()`, `logout()`, `impersonate( actor )`, `clearImpersonation()`, `addOnChange` /
   `removeOnChange`, `close()`. After every change, the ambient values of the endpoint are updated.
 
+## The remote logins (OpenID Connect)
+
+The authentication center holds the client secrets and does the protocol (see CK.AppIdentity.Cris.AuthCenter). This
+front:
+
+1. **Start:** an `IStartLoginCommand` on `/.cris/auth`. The endpoint gives its callback URL (`/.auth/oidc/callback` of the
+   request's origin: the authentication center accepts only the configured ones) and sets the `ck-auth-login` cookie
+   (the hash of its correlation secret goes with the pending login). The result is the provider's URL.
+2. **Callback:** the provider redirects the browser to `/.auth/oidc/callback?state=...&code=...`. The front builds the
+   `IRemoteLoginCallbackCommand` (a client never sends it: it is refused on `/.cris/auth`), relays or executes it, and
+   deletes the `ck-auth-login` cookie. The session cookies are set here; the response never carries a token.
+3. **End:**
+   - **popup:** a page that posts `{ type: "ck-auth-remote-login", success, error }` to its own origin and closes (CSP with
+     a nonce, `no-store`, `no-referrer`);
+   - **inline:** a `303` to the return URL (relative only: anything else becomes `/`) with the `ck-auth-login` marker
+     (`ok` or the resource name of the error).
+
+On the client, `AuthService.startPopupLogin( scheme )` (from a click: the popup opens before anything else, browsers
+block a later one; only a message of this origin from this popup ends the login) and `startInlineLogin( scheme,
+returnUrl )`; then the session is refreshed (the marker forces it at the load of the return URL: the cached token is
+stale). `refreshSchemesAsync()` reads the schemes (`availableSchemes`, the remote ones are `Oidc.<Suffix>`) and
+`remoteLoginError` is the error of the last remote login.
+
 ## Not yet
 
-- The remote logins (OIDC): `IStartLoginCommand`, the challenge and the callback.
 - A tenant domain per host: the current local party is the root one.

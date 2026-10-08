@@ -9,6 +9,9 @@ import { RefreshSessionCommand } from '@local/ck-gen/CK/IO/Authentication/Refres
 import { LogoutSessionCommand } from '@local/ck-gen/CK/IO/Authentication/LogoutSessionCommand';
 import { ImpersonateCommand } from '@local/ck-gen/CK/IO/Authentication/ImpersonateCommand';
 import { ClearImpersonationCommand } from '@local/ck-gen/CK/IO/Authentication/ClearImpersonationCommand';
+import { StartLoginCommand } from '@local/ck-gen/CK/IO/Authentication/StartLoginCommand';
+import { GetLoginSchemesQCommand } from '@local/ck-gen/CK/IO/Authentication/GetLoginSchemesQCommand';
+import { RedirectedUrl } from '@local/ck-gen/CK/Cris/RedirectedUrl';
 
 /**
  * The authentication state of the application, on top of a HttpCrisEndpoint.
@@ -34,6 +37,8 @@ export class AuthService {
     #refreshTimer: ReturnType<typeof setTimeout>|undefined;
     #isInitialized: Promise<void>;
     #closed: boolean;
+    #availableSchemes: ReadonlyArray<string>;
+    #remoteLoginError: string|undefined;
     // The sending order of the commands: the last sent session command wins.
     #sent: WeakMap<object, number>;
     #sentCount: number;
@@ -68,6 +73,7 @@ export class AuthService {
         this.#info = new AuthenticationInfoPoco();
         this.#rememberMe = false;
         this.#closed = false;
+        this.#availableSchemes = [];
         this.#sent = new WeakMap();
         this.#sentCount = 0;
         this.#lastApplied = 0;
@@ -120,11 +126,14 @@ export class AuthService {
     /**
      * Refreshes the session. The tabs refresh one at a time: a tab that waited for another one adopts its new token.
      */
-    public async refresh(): Promise<void> {
+    public refresh(): Promise<void> { return this.#refreshAsync( false ); }
+
+    // When forced (after a remote login), the cached token is never adopted: the cookies have changed.
+    async #refreshAsync( force: boolean ): Promise<void> {
         const before = this.#token;
         const run = async () => {
             const stored = this.#readStorage();
-            if( stored && stored.token !== before && this.#isAlive( stored.info ) ) {
+            if( !force && stored && stored.token !== before && this.#isAlive( stored.info ) ) {
                 this.#adopt( stored );
                 return;
             }
@@ -133,6 +142,100 @@ export class AuthService {
         const locks = typeof navigator !== "undefined" ? navigator.locks : undefined;
         if( locks ) await locks.request( AuthService.refreshLockName, run );
         else await run();
+    }
+
+    /**
+     * The name of the query parameter that the remote login callback adds to the return URL of an inline login:
+     * "ok" or the resource name of the error.
+     */
+    public static readonly remoteLoginMarker = "ck-auth-login";
+
+    /** Gets or sets the features of the popup window of a remote login (see window.open). */
+    public popupFeatures: string = "popup,width=500,height=650";
+
+    /** Gets the login schemes of the authentication center (see refreshSchemesAsync). */
+    public get availableSchemes(): ReadonlyArray<string> { return this.#availableSchemes; }
+
+    /**
+     * Gets the error (a resource name like "Authentication.RemoteLoginRefused") of the last remote login, if it failed.
+     */
+    public get remoteLoginError(): string|undefined { return this.#remoteLoginError; }
+
+    /**
+     * Reads the login schemes of the authentication center: the remote ones are "Oidc.<Suffix>".
+     * @returns The available schemes.
+     */
+    public async refreshSchemesAsync(): Promise<ReadonlyArray<string>> {
+        const r = await this.#endpoint.sendAsync( new GetLoginSchemesQCommand() );
+        if( !(r.result instanceof CrisError) && r.result ) this.#availableSchemes = r.result;
+        return this.#availableSchemes;
+    }
+
+    /**
+     * Starts a remote login in the current window: the browser navigates to the provider and comes back to the
+     * return URL (the session is then refreshed by the new page).
+     * @param scheme The scheme ("Oidc.Google" for instance).
+     * @param returnUrl The relative URL to return to. Defaults to the current path.
+     * @param rememberMe Whether the session must be remembered.
+     * @returns The error if the login cannot start (the browser navigates otherwise).
+     */
+    public async startInlineLogin( scheme: string, returnUrl?: string, rememberMe: boolean = false ): Promise<CrisError|undefined> {
+        const c = new StartLoginCommand();
+        c.scheme = scheme;
+        c.inlineMode = true;
+        c.returnUrl = returnUrl ?? (window.location.pathname + window.location.search);
+        c.rememberMe = rememberMe;
+        const r = await this.#endpoint.sendAsync( c );
+        if( r.result instanceof CrisError ) return r.result;
+        window.location.assign( (<RedirectedUrl>r.result).url );
+        return undefined;
+    }
+
+    /**
+     * Starts a remote login in a popup window. It must be called from a user gesture (a click): the popup is opened
+     * before anything else, browsers block a window opened later.
+     * The popup ends with a message from this origin (it carries no token): the session is then refreshed.
+     * @param scheme The scheme ("Oidc.Google" for instance).
+     * @param rememberMe Whether the session must be remembered.
+     * @returns True on success, false otherwise (see remoteLoginError).
+     */
+    public async startPopupLogin( scheme: string, rememberMe: boolean = false ): Promise<boolean> {
+        const popup = window.open( "", "ck-auth-login", this.popupFeatures );
+        if( !popup ) {
+            this.#remoteLoginError = "Authentication.PopupBlocked";
+            return false;
+        }
+        const c = new StartLoginCommand();
+        c.scheme = scheme;
+        c.inlineMode = false;
+        c.rememberMe = rememberMe;
+        const r = await this.#endpoint.sendAsync( c );
+        if( r.result instanceof CrisError || !r.result ) {
+            popup.close();
+            this.#remoteLoginError = r.result instanceof CrisError ? r.result.message : "Authentication.RemoteLoginFailed";
+            return false;
+        }
+        popup.location.href = r.result.url;
+        const success = await new Promise<boolean>( resolve => {
+            let done = false;
+            const end = ( s: boolean, error?: string ) => {
+                if( done ) return;
+                done = true;
+                window.removeEventListener( "message", onMessage );
+                clearInterval( timer );
+                this.#remoteLoginError = s ? undefined : (error ?? "Authentication.RemoteLoginFailed");
+                resolve( s );
+            };
+            // Only the callback page of this origin, in this popup, can end the login.
+            const onMessage = ( e: MessageEvent ) => {
+                if( e.origin !== window.location.origin || e.source !== popup || e.data?.type !== "ck-auth-remote-login" ) return;
+                end( e.data.success === true, e.data.error ?? undefined );
+            };
+            const timer = setInterval( () => { if( popup.closed ) end( false, "Authentication.PopupClosed" ); }, 500 );
+            window.addEventListener( "message", onMessage );
+        } );
+        if( success ) await this.#refreshAsync( true );
+        return success;
     }
 
     /** Ends the session. */
@@ -190,6 +293,18 @@ export class AuthService {
     }
 
     async #initializeAsync(): Promise<void> {
+        // Back from an inline remote login: the cookies have changed, the cached token is stale.
+        if( typeof window !== "undefined" ) {
+            const url = new URL( window.location.href );
+            const marker = url.searchParams.get( AuthService.remoteLoginMarker );
+            if( marker !== null ) {
+                url.searchParams.delete( AuthService.remoteLoginMarker );
+                window.history.replaceState( window.history.state, "", url.pathname + url.search + url.hash );
+                this.#remoteLoginError = marker === "ok" ? undefined : marker;
+                await this.#refreshAsync( true );
+                return;
+            }
+        }
         const stored = this.#readStorage();
         if( stored && this.#isAlive( stored.info ) ) {
             this.#apply( stored.info, stored.token, stored.rememberMe, false );
