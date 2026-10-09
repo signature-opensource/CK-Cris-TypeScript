@@ -1,0 +1,7 @@
+{
+    "CK.PasskeyRegistration.Button": "Ajouter une clé d'accès",
+    "CK.PasskeyRegistration.Exists": "Cet appareil a déjà une clé d'accès pour votre compte.",
+    "CK.PasskeyRegistration.Failure": "La clé d'accès ne peut pas être ajoutée. Veuillez réessayer.",
+    "CK.PasskeyRegistration.RecentLoginRequired": "Reconnectez-vous pour ajouter une clé d'accès (connexion sans mot de passe avec votre appareil).",
+    "CK.PasskeyRegistration.Success": "La clé d'accès '{{name}}' a été ajoutée."
+}

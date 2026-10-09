@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Description>The passkey (WebAuthn) logins of the HTTP front, on the TypeScript side: the framework-free PasskeyService (login, registration) over the Cris endpoint.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.IO.Authentication.Passkey" Version="2.0.2-0.cris-auth.0.ci.5" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CK.Cris.AspNet.Authentication\CK.Cris.AspNet.Authentication.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="MSBuild/CK.Cris.AspNet.Authentication.Passkey.targets">
+      <Pack>true</Pack>
+      <PackagePath>buildTransitive\CK.Cris.AspNet.Authentication.Passkey.targets</PackagePath>
+    </Content>
+  </ItemGroup>
+</Project>

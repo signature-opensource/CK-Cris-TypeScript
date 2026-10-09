@@ -5,6 +5,7 @@ using CK.Cris.AspNet;
 using CK.Cris.AspNet.Authentication;
 using CK.IO.Authentication;
 using CK.IO.Authentication.Basic;
+using CK.IO.Authentication.Passkey;
 using CK.IO.Authentication.Weak;
 using CK.Testing;
 using Microsoft.AspNetCore.Builder;
@@ -39,14 +40,15 @@ public sealed class FakeTokenReader : IAuthenticationTokenReader
 /// </summary>
 public sealed class FakeLoginHandlers : ISingletonAutoService
 {
-    static ISessionResult Issue( IAuthenticationSessionEndpoint endpoint, ICommand<ISessionResult> command, string name, bool rememberMe, bool weak = false )
+    // A login gives a Normal session (Critical for a passkey login, like the real authentication center).
+    static ISessionResult Issue( IAuthenticationSessionEndpoint endpoint, ICommand<ISessionResult> command, string name, bool rememberMe, bool weak = false, bool critical = false )
     {
         var utcNow = DateTime.UtcNow;
         var proof = endpoint.Issue( weak ? "42.the-session" : "3712.the-session", rememberMe, utcNow.AddHours( 1 ) );
         var actor = weak
                         ? new ActorInfo( 42, name, CK.Core.AuthLevel.Unsafe, [new SchemeInfo( ActorInfo.WeakScheme, utcNow )] )
-                        : new ActorInfo( 3712, name, CK.Core.AuthLevel.Normal, [new SchemeInfo( "Basic", utcNow )] );
-        var info = AuthenticationInfo.Create( actor, utcNow.AddHours( 1 ), null, "D", utcNow );
+                        : new ActorInfo( 3712, name, critical ? CK.Core.AuthLevel.Critical : CK.Core.AuthLevel.Normal, [new SchemeInfo( critical ? "Passkey" : "Basic", utcNow )] );
+        var info = AuthenticationInfo.Create( actor, utcNow.AddHours( 1 ), critical ? utcNow.AddMinutes( 5 ) : null, "D", utcNow );
         var token = "token-" + Guid.NewGuid().ToString( "N" );
         FakeTokenReader.Tokens[token] = new AuthenticationTokenData( info, proof.BindingSecretHash );
         return command.CreateResult( r =>
@@ -92,7 +94,27 @@ public sealed class FakeLoginHandlers : ISingletonAutoService
     public void Handle( ILogoutSessionCommand cmd, IAuthenticationSessionEndpoint endpoint ) => endpoint.Clear();
 
     [CommandHandler]
-    public IList<string> Handle( IGetLoginSchemesQCommand cmd ) => ["Basic", "Oidc.Google", "Oidc.Microsoft"];
+    public IList<string> Handle( IGetLoginSchemesQCommand cmd ) => ["Basic", "Oidc.Google", "Oidc.Microsoft", "Passkey"];
+
+    // The passkey ceremonies: the browser's part is mocked by the spec, these fakes check what it sends.
+    [CommandHandler]
+    public string Handle( IStartPasskeyLoginCommand cmd ) => """{"challenge":"login-challenge","rpId":"localhost","allowCredentials":[],"userVerification":"required"}""";
+
+    [CommandHandler]
+    public ISessionResult Handle( IPasskeyLoginCommand cmd, IAuthenticationSessionEndpoint endpoint )
+    {
+        if( !cmd.Response.Contains( "\"signed\":\"login-challenge\"" ) )
+        {
+            return cmd.CreateResult( r => { r.Success = false; r.UserMessages.Add( UserMessage.Error( NormalizedCultureInfo.CodeDefault, "The passkey cannot be verified.", "Authentication.PasskeyVerificationFailed" ) ); } );
+        }
+        return Issue( endpoint, cmd, "Albert", cmd.RememberMe, critical: true );
+    }
+
+    [CommandHandler]
+    public string Handle( IStartPasskeyRegistrationCommand cmd ) => """{"challenge":"registration-challenge","rp":{"id":"localhost","name":"Test"},"user":{"id":"dXNlcg","name":"Albert","displayName":"Albert"},"pubKeyCredParams":[{"type":"public-key","alg":-7}]}""";
+
+    [CommandHandler]
+    public IPasskeyRegistrationResult Handle( IPasskeyRegistrationCommand cmd ) => cmd.CreateResult( r => r.Name = "Test passkey" );
 }
 
 public class E2ETests
@@ -106,6 +128,7 @@ public class E2ETests
         configuration.FirstBinPath.Path = TestHelper.BinFolder;
         configuration.FirstBinPath.Assemblies.Add( "CK.Ng.Cris.AspNet.Authentication.Basic" );
         configuration.FirstBinPath.Assemblies.Add( "CK.Ng.Cris.AspNet.Authentication.Weak" );
+        configuration.FirstBinPath.Assemblies.Add( "CK.Ng.Cris.AspNet.Authentication.Passkey" );
         configuration.FirstBinPath.Types.Add( typeof( CrisAspNetService ),
                                               typeof( CrisAuthenticationService ),
                                               typeof( AuthenticationInfo ),
@@ -117,6 +140,11 @@ public class E2ETests
                                               typeof( FakeLoginHandlers ),
                                               typeof( IBasicLoginCommand ),
                                               typeof( IWeakLoginCommand ),
+                                              typeof( IStartPasskeyLoginCommand ),
+                                              typeof( IPasskeyLoginCommand ),
+                                              typeof( IStartPasskeyRegistrationCommand ),
+                                              typeof( IPasskeyRegistrationCommand ),
+                                              typeof( IPasskeyRegistrationResult ),
                                               typeof( ILogoutSessionCommand ),
                                               typeof( IRefreshSessionCommand ),
                                               typeof( ISessionResult ),

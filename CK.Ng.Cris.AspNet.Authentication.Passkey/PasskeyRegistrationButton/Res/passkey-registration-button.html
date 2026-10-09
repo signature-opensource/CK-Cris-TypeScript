@@ -1,0 +1,7 @@
+<button class="ck-passkey-registration-button" nz-button type="button" nzType="default" [nzLoading]="busy()" [disabled]="!canRegister()" (click)="register()">
+    <fa-icon class="ck-btn-icon" [icon]="passkeyIcon"></fa-icon>
+    <span class="text">{{ 'CK.PasskeyRegistration.Button' | translate }}</span>
+</button>
+@if ( !canRegister() ) {
+    <span class="ck-passkey-registration-hint">{{ 'CK.PasskeyRegistration.RecentLoginRequired' | translate }}</span>
+}

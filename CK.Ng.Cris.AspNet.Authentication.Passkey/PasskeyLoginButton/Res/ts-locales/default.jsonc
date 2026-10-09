@@ -1,0 +1,4 @@
+{
+    "CK.PasskeyLogin.Button": "Sign in with a passkey",
+    "CK.PasskeyLogin.Failure": "This passkey cannot be used. Please try again or use another method."
+}

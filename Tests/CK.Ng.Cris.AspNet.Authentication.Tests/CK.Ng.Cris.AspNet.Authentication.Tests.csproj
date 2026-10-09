@@ -14,6 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\CK.Ng.Cris.AspNet.Authentication.Basic\CK.Ng.Cris.AspNet.Authentication.Basic.csproj" />
     <ProjectReference Include="..\..\CK.Ng.Cris.AspNet.Authentication.Weak\CK.Ng.Cris.AspNet.Authentication.Weak.csproj" />
+    <ProjectReference Include="..\..\CK.Ng.Cris.AspNet.Authentication.Passkey\CK.Ng.Cris.AspNet.Authentication.Passkey.csproj" />
     <ProjectReference Include="..\..\CK.Cris.AspNet.Engine\CK.Cris.AspNet.Engine.csproj" />
   </ItemGroup>
 </Project>

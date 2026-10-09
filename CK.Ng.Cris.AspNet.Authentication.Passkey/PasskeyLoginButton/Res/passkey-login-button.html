@@ -1,0 +1,6 @@
+@if ( available() ) {
+    <button class="ck-passkey-login-button" nz-button type="button" nzType="default" nzSize="large" [nzLoading]="busy()" (click)="login()">
+        <fa-icon class="ck-btn-icon" [icon]="passkeyIcon"></fa-icon>
+        <span class="text">{{ 'CK.PasskeyLogin.Button' | translate }}</span>
+    </button>
+}

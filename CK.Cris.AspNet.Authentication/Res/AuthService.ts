@@ -14,6 +14,23 @@ import { GetLoginSchemesQCommand } from '@local/ck-gen/CK/IO/Authentication/GetL
 import { RedirectedUrl } from '@local/ck-gen/CK/Cris/RedirectedUrl';
 
 /**
+ * The free data of a login (an invitation token for instance): the UserData of the login commands. They come from
+ * the client: the server treats them as untrusted, and limits them (16 entries, 4096 characters).
+ */
+export type LoginUserData = ReadonlyMap<string, string> | Readonly<Record<string, string>>;
+
+/**
+ * Copies login user data into the UserData of a login command.
+ * @param target The UserData of the command.
+ * @param userData The data to copy (nothing when undefined).
+ */
+export function setLoginUserData( target: Map<string, string>, userData?: LoginUserData ): void {
+    if( !userData ) return;
+    const entries = userData instanceof Map ? userData.entries() : Object.entries( userData );
+    for( const [k, v] of entries ) target.set( k, v );
+}
+
+/**
  * The authentication state of the application, on top of a HttpCrisEndpoint.
  * <p>
  * The state is updated by the endpoint itself (a hook): any session command sent through the endpoint (a login,
@@ -177,14 +194,17 @@ export class AuthService {
      * @param scheme The scheme ("Oidc.Google" for instance).
      * @param returnUrl The relative URL to return to. Defaults to the current path.
      * @param rememberMe Whether the session must be remembered.
+     * @param userData Optional free data of the login (an invitation token for instance): kept by the authentication center
+     *        until the end of the login, they are untrusted and limited (16 entries, 4096 characters).
      * @returns The error if the login cannot start (the browser navigates otherwise).
      */
-    public async startInlineLogin( scheme: string, returnUrl?: string, rememberMe: boolean = false ): Promise<CrisError|undefined> {
+    public async startInlineLogin( scheme: string, returnUrl?: string, rememberMe: boolean = false, userData?: LoginUserData ): Promise<CrisError|undefined> {
         const c = new StartLoginCommand();
         c.scheme = scheme;
         c.inlineMode = true;
         c.returnUrl = returnUrl ?? (window.location.pathname + window.location.search);
         c.rememberMe = rememberMe;
+        setLoginUserData( c.userData, userData );
         const r = await this.#endpoint.sendAsync( c );
         if( r.result instanceof CrisError ) return r.result;
         window.location.assign( (<RedirectedUrl>r.result).url );
@@ -197,9 +217,10 @@ export class AuthService {
      * The popup ends with a message from this origin (it carries no token): the session is then refreshed.
      * @param scheme The scheme ("Oidc.Google" for instance).
      * @param rememberMe Whether the session must be remembered.
+     * @param userData Optional free data of the login (see startInlineLogin).
      * @returns True on success, false otherwise (see remoteLoginError).
      */
-    public async startPopupLogin( scheme: string, rememberMe: boolean = false ): Promise<boolean> {
+    public async startPopupLogin( scheme: string, rememberMe: boolean = false, userData?: LoginUserData ): Promise<boolean> {
         const popup = window.open( "", "ck-auth-login", this.popupFeatures );
         if( !popup ) {
             this.#remoteLoginError = "Authentication.PopupBlocked";
@@ -209,6 +230,7 @@ export class AuthService {
         c.scheme = scheme;
         c.inlineMode = false;
         c.rememberMe = rememberMe;
+        setLoginUserData( c.userData, userData );
         const r = await this.#endpoint.sendAsync( c );
         if( r.result instanceof CrisError || !r.result ) {
             popup.close();

@@ -19,6 +19,7 @@
   </Folder>
   <Project Path="CK.Cris.AspNet.Auth.Basic/CK.Cris.AspNet.Auth.Basic.csproj" />
   <Project Path="CK.Cris.AspNet.Authentication/CK.Cris.AspNet.Authentication.csproj" />
+  <Project Path="CK.Cris.AspNet.Authentication.Passkey/CK.Cris.AspNet.Authentication.Passkey.csproj" />
   <Project Path="CK.Cris.AspNet.Engine/CK.Cris.AspNet.Engine.csproj" />
   <Project Path="CK.Cris.AspNet/CK.Cris.AspNet.csproj" />
   <Project Path="CK.Cris.TypeScript/CK.Cris.TypeScript.csproj" />
@@ -27,5 +28,6 @@
   <Project Path="CK.Ng.Cris.AspNet.Authentication.Basic/CK.Ng.Cris.AspNet.Authentication.Basic.csproj" />
   <Project Path="CK.Ng.Cris.AspNet.Authentication/CK.Ng.Cris.AspNet.Authentication.csproj" />
   <Project Path="CK.Ng.Cris.AspNet.Authentication.Weak/CK.Ng.Cris.AspNet.Authentication.Weak.csproj" />
+  <Project Path="CK.Ng.Cris.AspNet.Authentication.Passkey/CK.Ng.Cris.AspNet.Authentication.Passkey.csproj" />
   <Project Path="CK.Ng.Cris.AspNet/CK.Ng.Cris.AspNet.csproj" />
 </Solution>

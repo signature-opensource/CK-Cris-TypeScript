@@ -121,6 +121,18 @@ returnUrl )`; then the session is refreshed (the marker forces it at the load of
 stale). `refreshSchemesAsync()` reads the schemes (`availableSchemes`, the remote ones are `Oidc.<Suffix>`) and
 `remoteLoginError` is the error of the last remote login.
 
+Both start methods take an optional `userData` (a `Record` or a `Map`, see `LoginUserData` and `setLoginUserData`): free
+data of the login, an invitation token for instance. The authentication center keeps them until the callback (the browser
+never carries them back); they are untrusted and limited (16 entries, 4096 characters).
+
+## The passkeys
+
+The endpoint's `WebOrigin` is the origin that the session route requires from the browser: the passkey ceremonies are
+accepted by the authentication center only from configured origins, and the origin signed by the browser must be this
+one. Behind a reverse proxy, the request's scheme and host must be the public ones (forwarded headers), as for the
+same-origin check. The TypeScript side is in [CK.Cris.AspNet.Authentication.Passkey](../CK.Cris.AspNet.Authentication.Passkey/README.md):
+the `AuthService` has no passkey member.
+
 ## Not yet
 
 - A tenant domain per host: the current local party is the root one.
