@@ -44,8 +44,8 @@ public sealed class FakeLoginHandlers : ISingletonAutoService
         var utcNow = DateTime.UtcNow;
         var proof = endpoint.Issue( weak ? "42.the-session" : "3712.the-session", rememberMe, utcNow.AddHours( 1 ) );
         var actor = weak
-                        ? new ActorInfo( 42, name, AuthLevel.Unsafe, [new SchemeInfo( ActorInfo.WeakScheme, utcNow )] )
-                        : new ActorInfo( 3712, name, AuthLevel.Normal, [new SchemeInfo( "Basic", utcNow )] );
+                        ? new ActorInfo( 42, name, CK.Core.AuthLevel.Unsafe, [new SchemeInfo( ActorInfo.WeakScheme, utcNow )] )
+                        : new ActorInfo( 3712, name, CK.Core.AuthLevel.Normal, [new SchemeInfo( "Basic", utcNow )] );
         var info = AuthenticationInfo.Create( actor, utcNow.AddHours( 1 ), null, "D", utcNow );
         var token = "token-" + Guid.NewGuid().ToString( "N" );
         FakeTokenReader.Tokens[token] = new AuthenticationTokenData( info, proof.BindingSecretHash );
