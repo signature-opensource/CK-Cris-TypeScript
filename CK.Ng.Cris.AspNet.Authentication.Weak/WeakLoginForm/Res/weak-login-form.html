@@ -2,10 +2,10 @@
 <form nz-form [formGroup]="loginForm" (keydown)="keyDown($event)" class="ck-weak-login-form">
     <nz-form-item>
         <nz-form-control [nzErrorTip]="'CK.WeakLogin.Name.Required' | translate">
-            <nz-input-group>
-                <fa-icon class="ck-btn-icon" [icon]="weakActorIcon"></fa-icon>
+            <nz-input-group [nzPrefix]="weakActorIconTpl">
                 <input nz-input autocomplete="username" type="text" formControlName="weakActorName" [placeholder]="'CK.WeakLogin.Name.Placeholder' | translate" />
             </nz-input-group>
+            <ng-template #weakActorIconTpl><fa-icon class="ck-btn-icon" [icon]="weakActorIcon"></fa-icon></ng-template>
         </nz-form-control>
     </nz-form-item>
     <!-- <WeakLoginFormItems /> -->
