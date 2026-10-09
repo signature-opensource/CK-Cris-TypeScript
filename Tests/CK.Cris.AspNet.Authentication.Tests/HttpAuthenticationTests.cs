@@ -60,7 +60,12 @@ public sealed class FakeOpener : IAuthenticationSessionOpener
 
     public FakeOpener( IAuthenticationSessionEndpoint endpoint ) => _endpoint = endpoint;
 
-    public ValueTask<ISessionResult> OpenSessionAsync<T>( IActivityMonitor monitor, T command, string scheme, object payload, bool rememberMe = false )
+    public ValueTask<ISessionResult> OpenSessionAsync<T>( IActivityMonitor monitor,
+                                                          T command,
+                                                          string scheme,
+                                                          object payload,
+                                                          bool rememberMe = false,
+                                                          IReadOnlyDictionary<string, string?>? userData = null )
         where T : ICommand<ISessionResult>, ICommandAuthenticationSession
     {
         var name = ((IWeakLoginCommand)payload).WeakActorName;
@@ -128,6 +133,7 @@ public sealed class FakeRemoteLogin : ISingletonAutoService
 {
     public static readonly ConcurrentDictionary<string, string> Pending = new();
     public static string? LastCallbackUrl;
+    public static string? LastWebOrigin;
 
     [CommandHandler]
     public IList<string> Handle( IGetLoginSchemesQCommand cmd ) => ["Oidc.Test", "Weak"];
@@ -136,6 +142,7 @@ public sealed class FakeRemoteLogin : ISingletonAutoService
     public RedirectedUrl Handle( IStartLoginCommand cmd, IAuthenticationSessionEndpoint endpoint )
     {
         LastCallbackUrl = endpoint.RemoteLoginCallbackUrl;
+        LastWebOrigin = endpoint.WebOrigin;
         var state = Guid.NewGuid().ToString( "N" );
         Pending[state] = endpoint.PrepareRemoteLogin();
         return new RedirectedUrl( "https://idp.example.com/authorize?state=" + state, cmd.InlineMode );
@@ -333,6 +340,7 @@ public class HttpAuthenticationTests
         var (url, cookie, setCookie) = await StartRemoteLoginAsync( server, inline: false );
         url.IsInline.ShouldBeFalse();
         FakeRemoteLogin.LastCallbackUrl.ShouldBe( server.ServerAddress.TrimEnd( '/' ) + "/.auth/oidc/callback" );
+        FakeRemoteLogin.LastWebOrigin.ShouldBe( server.ServerAddress.TrimEnd( '/' ), "The origin that the session route requires from the browser." );
         var c = setCookie.ToLowerInvariant();
         c.ShouldContain( "path=/.auth/oidc/callback" );
         c.ShouldContain( "samesite=lax", customMessage: "The provider's redirection back is a cross-site navigation." );

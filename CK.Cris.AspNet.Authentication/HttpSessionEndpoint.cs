@@ -137,6 +137,20 @@ sealed class HttpSessionEndpoint : IAuthenticationSessionEndpoint
         }
     }
 
+    /// <summary>
+    /// Gets the origin of this endpoint: the one that the <see cref="CrisAuthenticationMiddleware"/> requires from the
+    /// browser ("Origin" header) on the session route. Behind a reverse proxy, the request scheme and host must be the public
+    /// ones (forwarded headers), as for the same-origin check.
+    /// </summary>
+    public string? WebOrigin
+    {
+        get
+        {
+            var r = _context.Request;
+            return $"{r.Scheme}://{r.Host}";
+        }
+    }
+
     /// <inheritdoc />
     public string PrepareRemoteLogin()
     {
