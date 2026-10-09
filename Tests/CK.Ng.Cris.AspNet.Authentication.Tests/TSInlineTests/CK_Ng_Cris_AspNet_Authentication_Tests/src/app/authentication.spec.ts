@@ -4,8 +4,9 @@ import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
 import { AuthService, AuthLevel, HttpCrisEndpoint, BasicLoginCommand, LogoutSessionCommand } from '@local/ck-gen';
 import { NgAuthService } from '@local/ck-gen/CK/Ng/Cris/AspNet/Authentication/NgAuthService';
 import { Login } from '@local/ck-gen/CK/Ng/Cris/AspNet/Authentication/login/login';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { BasicLoginForm } from '@local/ck-gen/CK/Ng/Cris/AspNet/Authentication/Basic/basic-login-form/basic-login-form';
+import { WeakLoginForm } from '@local/ck-gen/CK/Ng/Cris/AspNet/Authentication/Weak/weak-login-form/weak-login-form';
 
 // Trick from https://stackoverflow.com/a/77047461/190380
 if( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout(20 * 60 * 1000 ); // 20 minutes
@@ -102,5 +103,53 @@ describe( 'Login', () => {
     expect( buttons.length ).toBe( 2 );
     expect( buttons[0].textContent ).toContain( "Google" );
     expect( fixture.componentInstance.getProviderLogoSrc( "Oidc.Google" ) ).toBe( "login-providers/google.png" );
+  } );
+
+  it( 'contains the injected login forms', async () => {
+    const fixture = TestBed.createComponent( Login );
+    fixture.detectChanges();
+    const e = fixture.nativeElement as HTMLElement;
+    expect( e.querySelector( "ck-basic-login-form" ) ).not.toBeNull();
+    expect( e.querySelector( "ck-weak-login-form" ) ).not.toBeNull();
+  } );
+} );
+
+describe( 'WeakLoginForm', () => {
+  let auth: AuthService;
+  let ngAuth: NgAuthService;
+  let navigated: Array<unknown>;
+
+  beforeEach( async () => {
+    localStorage.clear();
+    await TestBed.configureTestingModule( {
+      providers: [...CKGenAppModule.Providers, provideNoopAnimations(), provideRouter( [] )]
+    } ).compileComponents();
+    await TestBed.inject( HttpCrisEndpoint ).sendAsync( new LogoutSessionCommand() );
+    auth = TestBed.inject( AuthService );
+    await auth.isInitialized;
+    ngAuth = TestBed.inject( NgAuthService );
+    navigated = [];
+    jest.spyOn( TestBed.inject( Router ), 'navigate' ).mockImplementation( async c => { navigated.push( c ); return true; } );
+  } );
+
+  afterEach( () => auth.close() );
+
+  it( 'logs in a weak actor: it stays the anonymous (Unsafe level) and is redirected', async () => {
+    const fixture = TestBed.createComponent( WeakLoginForm );
+    fixture.componentRef.setInput( 'redirectTo', '/operator' );
+    fixture.componentInstance.loginForm.setValue( { weakActorName: "Operator" } );
+    await fixture.componentInstance.submit();
+    expect( auth.authenticationInfo.unsafeActor.actorName ).toBe( "Operator" );
+    expect( auth.authenticationInfo.unsafeActor.level ).toBe( AuthLevel.Unsafe );
+    expect( ngAuth.actor().actorId ).toBe( 0 );
+    expect( navigated ).toEqual( [['/operator']] );
+  } );
+
+  it( 'an unknown weak actor stays where it is', async () => {
+    const fixture = TestBed.createComponent( WeakLoginForm );
+    fixture.componentInstance.loginForm.setValue( { weakActorName: "Nobody" } );
+    await fixture.componentInstance.submit();
+    expect( auth.authenticationInfo.unsafeActor.actorId ).toBe( 0 );
+    expect( navigated ).toEqual( [] );
   } );
 } );

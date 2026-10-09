@@ -1,0 +1,15 @@
+<nz-divider class="ck-weak-login-divider" [nzText]="'CK.WeakLogin.Divider' | translate"></nz-divider>
+<form nz-form [formGroup]="loginForm" (keydown)="keyDown($event)" class="ck-weak-login-form">
+    <nz-form-item>
+        <nz-form-control [nzErrorTip]="'CK.WeakLogin.Name.Required' | translate">
+            <nz-input-group>
+                <fa-icon class="ck-btn-icon" [icon]="weakActorIcon"></fa-icon>
+                <input nz-input autocomplete="username" type="text" formControlName="weakActorName" [placeholder]="'CK.WeakLogin.Name.Placeholder' | translate" />
+            </nz-input-group>
+        </nz-form-control>
+    </nz-form-item>
+    <!-- <WeakLoginFormItems /> -->
+</form>
+<button class="ck-weak-login-button" nz-button type="submit" nzType="default" nzSize="large" [disabled]="loginForm.invalid" (click)="submit()">
+    <span class="text">{{ 'CK.WeakLogin.Button' | translate }}</span>
+</button>

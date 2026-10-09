@@ -1,0 +1,7 @@
+{
+    "CK.WeakLogin.Button": "Se connecter sans mot de passe",
+    "CK.WeakLogin.Divider": "ou",
+    "CK.WeakLogin.Failure": "Nom inconnu. Veuillez réessayer.",
+    "CK.WeakLogin.Name.Placeholder": "Renseignez votre nom (accès limité)",
+    "CK.WeakLogin.Name.Required": "Veuillez renseigner votre nom"
+}

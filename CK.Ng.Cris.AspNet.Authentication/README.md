@@ -28,3 +28,12 @@ The remote login errors are notified (a closed popup is not an error).
 
 The Basic login form (user name, password, remember me), injected in the `Login` component. It sends the
 `IBasicLoginCommand` through the `HttpCrisEndpoint`: the `AuthService` follows it like any session command.
+
+## CK.Ng.Cris.AspNet.Authentication.Weak
+
+The Weak login form (a weak actor name, no password), injected in the `Login` component after the remote schemes. It
+sends the `IWeakLoginCommand` through the `HttpCrisEndpoint`. A weak actor is at the Unsafe level: it is **not
+authenticated** (`actor` stays the anonymous, `authenticationInfo.unsafeActor` is the weak actor), so the `PrivatePage`
+refuses it and the `Login` component does not redirect it. On success, the form navigates to its `redirectTo` input
+(`/` by default): with CK.Ng.PublicPage, `/` is the public page when the private one refuses the actor. The application
+routes there what a weak actor may do (its commands are the `ICommandAuthUnsafe` ones).

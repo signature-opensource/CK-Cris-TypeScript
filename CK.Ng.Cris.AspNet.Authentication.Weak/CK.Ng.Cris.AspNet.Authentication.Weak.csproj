@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Description>The Weak login form (a weak actor name, no password) of CK.Ng.Cris.AspNet.Authentication: it sends the IWeakLoginCommand.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.IO.Authentication.Weak" Version="2.0.1-0.cris-auth.0.ci.10" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CK.Ng.Cris.AspNet.Authentication\CK.Ng.Cris.AspNet.Authentication.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="MSBuild/CK.Ng.Cris.AspNet.Authentication.Weak.targets">
+      <Pack>true</Pack>
+      <PackagePath>buildTransitive\CK.Ng.Cris.AspNet.Authentication.Weak.targets</PackagePath>
+    </Content>
+  </ItemGroup>
+</Project>

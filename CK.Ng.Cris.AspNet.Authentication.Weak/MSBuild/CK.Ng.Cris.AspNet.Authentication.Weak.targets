@@ -1,0 +1,14 @@
+<Project>
+
+  <Target Name="AddPreserveCKNgCrisAspNetAuthenticationWeakGeneratedFile" BeforeTargets="BeforeCompile;CoreCompile" Inputs="$(MSBuildAllProjects)" Outputs="$(IntermediateOutputPath)CK.Ng.Cris.AspNet.Authentication.Weak.AutoAttributes.g.cs">
+    <PropertyGroup>
+      <GeneratedFilePath>$(IntermediateOutputPath)CK.Ng.Cris.AspNet.Authentication.Weak.AutoAttributes.g.cs</GeneratedFilePath>
+    </PropertyGroup>
+    <ItemGroup>
+      <Compile Include="$(GeneratedFilePath)" />
+      <FileWrites Include="$(GeneratedFilePath)" />
+    </ItemGroup>
+    <WriteLinesToFile Lines="[assembly: CK.Setup.PreserveAssemblyReferenceAttribute(typeof(CK.Ng.Cris.AspNet.Authentication.Weak.NgCrisAuthenticationWeakPackage))]" File="$(GeneratedFilePath)" WriteOnlyWhenDifferent="true" Overwrite="true" />
+  </Target>
+
+</Project>
