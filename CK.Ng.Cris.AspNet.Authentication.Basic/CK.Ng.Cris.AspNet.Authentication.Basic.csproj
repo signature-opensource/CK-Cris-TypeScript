@@ -4,7 +4,7 @@
     <Description>The Basic login form (user name and password) of CK.Ng.Cris.AspNet.Authentication: it sends the IBasicLoginCommand.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.IO.Authentication.Basic" Version="2.0.2-0.cris-auth.0.ci.5" />
+    <PackageReference Include="CK.IO.Authentication.Basic" Version="2.0.2-0.cris-auth.0.ci.6" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Ng.Cris.AspNet.Authentication\CK.Ng.Cris.AspNet.Authentication.csproj" />

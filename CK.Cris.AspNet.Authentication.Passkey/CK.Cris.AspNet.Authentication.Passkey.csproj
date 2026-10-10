@@ -4,7 +4,7 @@
     <Description>The passkey (WebAuthn) logins of the HTTP front, on the TypeScript side: the framework-free PasskeyService (login, registration) over the Cris endpoint.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.IO.Authentication.Passkey" Version="2.0.2-0.cris-auth.0.ci.5" />
+    <PackageReference Include="CK.IO.Authentication.Passkey" Version="2.0.2-0.cris-auth.0.ci.6" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Cris.AspNet.Authentication\CK.Cris.AspNet.Authentication.csproj" />
