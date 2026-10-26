@@ -29,13 +29,13 @@ namespace CK.Cris.AspNet.Authentication;
 ///   </item>
 ///   <item>
 ///   <b>"/.cris/auth":</b> the route of the session commands (and only them, see <see cref="CrisAspNetAuthenticationPackage"/>). It
-///   accepts only POST with a JSON content. A session command is relayed to a remote authentication center when there is one
-///   (<see cref="IAuthenticationSessionRelay"/>), executed here otherwise.
+///   accepts only POST with a JSON content. A session command is relayed to the remote authentication center by a front
+///   (an application that has an <see cref="IAuthenticationSessionRelay"/>), executed here otherwise.
 ///   </item>
 ///   <item>
 ///   <b>"/.cris/auth-center":</b> the route of the commands executed by the authentication center (<see cref="ICommandAuthCenter"/>,
 ///   and only them). It accepts only POST with a JSON content. After its incoming validation, a command is relayed with the
-///   caller's proof to a remote authentication center when there is one (<see cref="IAuthCenterCommandRelay"/>), executed
+///   caller's proof to the remote authentication center by a front (<see cref="IAuthCenterCommandRelay"/>), executed
 ///   here otherwise. The refresh cookie is not sent to this route.
 ///   </item>
 /// </list>
@@ -100,7 +100,7 @@ public sealed class CrisAuthenticationMiddleware
         if( ctx.Request.Path == _authCenterPath )
         {
             var relay = services.GetService<IAuthCenterCommandRelay>();
-            await HandleCommandAsync( ctx, monitor, c => relay != null && c is ICommandAuthCenter a ? relay.TryRelay( monitor, a ) : null );
+            await HandleCommandAsync( ctx, monitor, c => relay != null && c is ICommandAuthCenter a ? relay.RelayAsync( monitor, a ) : null );
             return;
         }
         await _next( ctx );
@@ -177,7 +177,7 @@ public sealed class CrisAuthenticationMiddleware
 
     // A remote login callback is built by the callback endpoint only: a client never sends it.
     // A starting remote login records how it ends (only the front needs it: see HttpSessionEndpoint.PrepareRemoteLogin).
-    // Then the relay to a remote AuthCenter (null: executed here).
+    // Then the relay to the remote AuthCenter of a front (null: executed here).
     Task<object?>? OverrideSessionCommand( IActivityMonitor monitor, IAbstractCommand c, IAuthenticationSessionRelay? relay, HttpSessionEndpoint endpoint )
     {
         if( c is IRemoteLoginCallbackCommand )
@@ -188,7 +188,7 @@ public sealed class CrisAuthenticationMiddleware
                                                                                                                              "Authentication.InvalidCommand" ) ) ) );
         }
         if( c is IStartLoginCommand start ) endpoint.SetRemoteLoginEnd( start.InlineMode, start.ReturnUrl );
-        return relay != null && c is ICommandAuthenticationSession s ? relay.TryRelay( monitor, s ) : null;
+        return relay != null && c is ICommandAuthenticationSession s ? relay.RelayAsync( monitor, s ) : null;
     }
 
     /// <summary>
@@ -268,11 +268,11 @@ public sealed class CrisAuthenticationMiddleware
                                      """ ).ConfigureAwait( false );
     }
 
-    // The callback command is relayed to a remote AuthCenter or executed here (validated first).
+    // The callback command is relayed to the remote AuthCenter of a front or executed here (validated first).
     static async Task<object?> ExecuteAsync( IActivityMonitor monitor, IServiceProvider services, IRemoteLoginCallbackCommand command )
     {
-        var relayed = services.GetService<IAuthenticationSessionRelay>()?.TryRelay( monitor, command );
-        if( relayed != null ) return await relayed.ConfigureAwait( false );
+        var relay = services.GetService<IAuthenticationSessionRelay>();
+        if( relay != null ) return await relay.RelayAsync( monitor, command ).ConfigureAwait( false );
         var validation = await services.GetRequiredService<RawCrisReceiver>().IncomingValidateAsync( monitor, services, command ).ConfigureAwait( false );
         if( !validation.Success )
         {

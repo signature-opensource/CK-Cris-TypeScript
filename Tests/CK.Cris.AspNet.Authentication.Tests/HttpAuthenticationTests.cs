@@ -58,7 +58,7 @@ public sealed class FakeAuthCenterRelay : IAuthCenterCommandRelay
 
     public FakeAuthCenterRelay( IAuthenticationSessionEndpoint endpoint ) => _endpoint = endpoint;
 
-    public Task<object?>? TryRelay( IActivityMonitor monitor, ICommandAuthCenter command )
+    public Task<object?> RelayAsync( IActivityMonitor monitor, ICommandAuthCenter command )
         => Task.FromResult<object?>( "Relayed: " + (_endpoint.PresentedBindingSecretHash ?? "no binding") );
 }
 
@@ -188,15 +188,14 @@ public sealed class FakeRemoteLogin : ISingletonAutoService
 }
 
 /// <summary>
-/// A relay that answers every session command (as a remote authentication center would).
+/// A relay that answers every session command (as a remote authentication center would): a weak login gets the
+/// "relayed" token, the other commands a null result.
 /// </summary>
 public sealed class FakeRelay : IAuthenticationSessionRelay
 {
-    public Task<object?>? TryRelay( IActivityMonitor monitor, ICommandAuthenticationSession command )
+    public Task<object?> RelayAsync( IActivityMonitor monitor, ICommandAuthenticationSession command )
     {
-        return command is IWeakLoginCommand login
-                ? Task.FromResult<object?>( login.CreateResult( r => r.Token = "relayed" ) )
-                : null;
+        return Task.FromResult<object?>( command is IWeakLoginCommand login ? login.CreateResult( r => r.Token = "relayed" ) : null );
     }
 }
 

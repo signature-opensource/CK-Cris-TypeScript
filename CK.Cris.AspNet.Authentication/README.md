@@ -42,7 +42,8 @@ public class CrisAspNetAuthenticationPackage : TypeScriptPackage
 These declarations are used by both sides: the generated TypeScript client posts each command to its route, and
 `CrisAspNetService` accepts a command only on its route (and a route accepts only its commands). The execution is
 overridden on both routes (the `executeOverride` of `CrisAspNetService.HandleRequestAsync`):
-- a session command is relayed to a remote authentication center when there is one (`IAuthenticationSessionRelay`);
+- in a front (an application that references CK.AppIdentity.Cris.AuthCenter.Remote), a session command is relayed to
+  its remote authentication center (`IAuthenticationSessionRelay`), never executed here;
 - an authentication center command is relayed, after its incoming validation here, with the caller's proof: the bearer
   token and the hash of the binding secret (`IAuthCenterCommandRelay`, `IAuthenticationSessionEndpoint.PresentedBindingSecretHash`).
   The remote authentication center establishes the identity again.

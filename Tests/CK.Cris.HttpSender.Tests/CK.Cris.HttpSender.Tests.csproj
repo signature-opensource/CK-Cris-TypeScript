@@ -11,14 +11,14 @@
   <ItemGroup>
     <PackageReference Include="CK.Testing.StObjEngine" Version="35.0.2-0.cris-auth.0.ci.2" />
     <PackageReference Include="CK.Testing.AspNetServer.Auth" Version="32.0.2-0.cris-auth.0.ci.4" />
-    <PackageReference Include="CK.AppIdentity.Hosting" Version="2.0.2-0.cris-auth.0.ci.2" />
+    <PackageReference Include="CK.AppIdentity.Hosting" Version="2.0.2-0.cris-auth.0.ci.3" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Cris.Executor.Engine" Version="2.0.2-0.cris-auth.0.ci.10" />
-    <PackageReference Include="CK.Cris.HttpSender" Version="2.0.2-0.cris-auth.0.ci.10" />
+    <PackageReference Include="CK.Cris.Executor.Engine" Version="2.0.2-0.cris-auth.0.ci.12" />
+    <PackageReference Include="CK.Cris.HttpSender" Version="2.0.2-0.cris-auth.0.ci.12" />
     <!-- This project tests Basic login and DelayedCommand. -->
-    <PackageReference Include="CK.Cris.Auth" Version="2.0.2-0.cris-auth.0.ci.10" />
-    <PackageReference Include="CK.Cris.DelayedCommand" Version="2.0.2-0.cris-auth.0.ci.10" />
+    <PackageReference Include="CK.Cris.Auth" Version="2.0.2-0.cris-auth.0.ci.12" />
+    <PackageReference Include="CK.Cris.DelayedCommand" Version="2.0.2-0.cris-auth.0.ci.12" />
     <ProjectReference Include="../../CK.Cris.AspNet.Auth.Basic/CK.Cris.AspNet.Auth.Basic.csproj" />
   </ItemGroup>
   <ItemGroup>
