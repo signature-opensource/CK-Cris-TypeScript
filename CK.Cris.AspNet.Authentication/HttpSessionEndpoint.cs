@@ -57,6 +57,13 @@ sealed class HttpSessionEndpoint : IAuthenticationSessionEndpoint
     public string? PresentedBindingSecret => _context.Request.Cookies[BindingCookieName];
 
     /// <inheritdoc />
+    /// <remarks>
+    /// The binding cookie (<c>Path=/.cris</c>) is sent to every route: unlike the <see cref="PresentedProof"/>, this doesn't
+    /// need the refresh cookie (sent to "/.cris/auth" only).
+    /// </remarks>
+    public string? PresentedBindingSecretHash => PresentedBindingSecret is { Length: > 0 } binding ? Hash( binding ) : null;
+
+    /// <inheritdoc />
     public AuthenticationSessionProof? PresentedProof
     {
         get

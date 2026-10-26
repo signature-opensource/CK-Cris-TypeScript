@@ -27,20 +27,27 @@ The other old packages depend on one of these.
 | Route | What |
 |---|---|
 | `/.cris/auth` | The session commands (`ICommandAuthenticationSession`: logins, refresh, logout, impersonation) and only them. POST with a JSON content only. |
-| `/.cris` | The other commands. A session command is refused here. |
+| `/.cris/auth-center` | The commands executed by the authentication center (`ICommandAuthCenter`: the actor's self-service on its own login methods, the login schemes) and only them. POST with a JSON content only. The refresh cookie is not sent here. |
+| `/.cris` | The other commands. A session command or an authentication center command is refused here. |
 | `/.auth/oidc/callback` | The callback of the remote logins (see below): a GET, outside `/.cris` (it is a cross-site navigation started by the provider). |
 
-The route is declared once, on the package ([`CrisAspNetAuthenticationPackage`](CrisAspNetAuthenticationPackage.cs)):
+The routes are declared once, on the package ([`CrisAspNetAuthenticationPackage`](CrisAspNetAuthenticationPackage.cs)):
 
 ```csharp
 [CrisRoute<ICommandAuthenticationSession>( AuthRoute )]
+[CrisRoute<ICommandAuthCenter>( AuthCenterRoute )]
 public class CrisAspNetAuthenticationPackage : TypeScriptPackage
 ```
 
-This single declaration is used by both sides: the generated TypeScript client posts the session commands to
-`/.cris/auth`, and `CrisAspNetService` accepts a command only on its route (and a route accepts only its commands). A
-session command is relayed to a remote authentication center when there is one (`IAuthenticationSessionRelay`), before
-the handlers (the `executeOverride` of `CrisAspNetService.HandleRequestAsync`), and executed here otherwise.
+These declarations are used by both sides: the generated TypeScript client posts each command to its route, and
+`CrisAspNetService` accepts a command only on its route (and a route accepts only its commands). The execution is
+overridden on both routes (the `executeOverride` of `CrisAspNetService.HandleRequestAsync`):
+- a session command is relayed to a remote authentication center when there is one (`IAuthenticationSessionRelay`);
+- an authentication center command is relayed, after its incoming validation here, with the caller's proof: the bearer
+  token and the hash of the binding secret (`IAuthCenterCommandRelay`, `IAuthenticationSessionEndpoint.PresentedBindingSecretHash`).
+  The remote authentication center establishes the identity again.
+
+Both are executed here otherwise (no authentication center, or a local one).
 
 ## Same origin, always checked
 
