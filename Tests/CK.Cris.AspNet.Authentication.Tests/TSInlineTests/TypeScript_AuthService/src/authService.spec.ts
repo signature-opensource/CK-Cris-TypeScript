@@ -264,3 +264,78 @@ it( 'a message that does not come from the popup is ignored', async () => {
     frame.remove();
   }
 });
+
+// Makes the next refreshes fail like a network error (the request never reaches the server). Returns the interceptor
+// to eject and a function that tells how many failures are left.
+function failNextRefreshes( count: number ): [number, () => number] {
+  let left = count;
+  const id = axios.interceptors.request.use( config => {
+    if( left > 0 && String( config.data ).includes( "RefreshSessionCommand" ) ) {
+      --left;
+      throw new Error( "Network down." );
+    }
+    return config;
+  } );
+  return [id, () => left];
+}
+
+async function waitForAsync( condition: () => boolean, ms: number ): Promise<boolean> {
+  for( let t = 0; t < ms; t += 50 ) {
+    if( condition() ) return true;
+    await new Promise( r => setTimeout( r, 50 ) );
+  }
+  return condition();
+}
+
+it( 'a refresh that cannot reach the server keeps the session and is retried', async () => {
+  const [ep, auth] = await newTabAsync();
+  await ep.sendOrThrowAsync( new WeakLoginCommand( "Operator" ) );
+  const token = auth.token;
+  const [id, left] = failNextRefreshes( 1 );
+  try {
+    await auth.refresh();
+    expect( left() ).toBe( 0 );
+    // Nothing has been decided: the session is kept (a failed SessionResult would have ended it).
+    expect( auth.token ).toBe( token );
+    expect( auth.authenticationInfo.unsafeActor.actorName ).toBe( "Operator" );
+    // The refresh is retried after 1 second.
+    expect( await waitForAsync( () => auth.token !== token, 4000 ) ).toBe( true );
+    expect( await whoAmIAsync( ep ) ).toBe( "Operator" );
+  }
+  finally {
+    axios.interceptors.request.eject( id );
+  }
+});
+
+it( 'the retries back off and coming back online retries at once', async () => {
+  const [ep, auth] = await newTabAsync();
+  await ep.sendOrThrowAsync( new WeakLoginCommand( "Operator" ) );
+  const token = auth.token;
+  const [id, left] = failNextRefreshes( 2 );
+  try {
+    await auth.refresh();
+    // The first retry (1 s) fails too: the next one is in 2 seconds.
+    expect( await waitForAsync( () => left() === 0, 3000 ) ).toBe( true );
+    expect( auth.token ).toBe( token );
+    // The browser comes back online: retried at once.
+    window.dispatchEvent( new Event( "online" ) );
+    expect( await waitForAsync( () => auth.token !== token, 1000 ) ).toBe( true );
+    expect( await whoAmIAsync( ep ) ).toBe( "Operator" );
+  }
+  finally {
+    axios.interceptors.request.eject( id );
+  }
+});
+
+it( 'a refresh refused by the server ends the session and is not retried', async () => {
+  const sent: ICommand<unknown>[] = [];
+  const [ep, auth] = await newTabAsync( sent );
+  await ep.sendOrThrowAsync( new WeakLoginCommand( "Operator" ) );
+  // Another client ends the session: the cookies are gone, the next refresh is refused (a decision).
+  await new HttpCrisEndpoint( axios, crisEndpoint ).sendAsync( new LogoutSessionCommand() );
+  await auth.refresh();
+  expect( auth.token ).toBeUndefined();
+  const refreshes = sent.filter( c => c instanceof RefreshSessionCommand ).length;
+  await new Promise( r => setTimeout( r, 1500 ) );
+  expect( sent.filter( c => c instanceof RefreshSessionCommand ).length ).toBe( refreshes );
+});

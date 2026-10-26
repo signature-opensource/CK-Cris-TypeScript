@@ -92,8 +92,15 @@ auth.actor.actorName; // "Alice"
   every command (`/.cris/auth` included: the impersonation reads the current authentication), and it applies the result
   of every session command, whoever sends it. There is no `login( ... )` method: the application sends the login
   command of its choice.
-- **What changes the state:** a successful `SessionResult` (a new token); a logout; a failed refresh (the server has
-  cleared the session). A failed login or impersonation changes nothing.
+- **What changes the state:** a successful `SessionResult` (a new token); a logout; a refresh **refused by the server**
+  (a failed `SessionResult` or a validation error: the server has decided, the session ends). A failed login or
+  impersonation changes nothing.
+- **A refresh that decided nothing is retried.** When the server could not be reached or failed (a `CommunicationError`
+  or an `ExecutionError`, including a front that cannot reach its authentication center), the session is kept and the
+  refresh is retried with a backoff: 1 s, 2 s, 4 s... at most 30 s (`retryMinDelay`, `retryMaxDelay`), endlessly. The
+  server answers a decision when the session has really ended. Coming back online or to the tab (`online`,
+  `visibilitychange`) retries at once. If the refresh was executed but its answer lost, the authentication center
+  accepts the previous secrets once (its `RefreshGraceWindow`): the session survives.
 - **The last sent session command wins:** the answer of an older one that arrives late (a refresh sent before a logout,
   for instance) is ignored.
 - **The token is cached in `localStorage`** and shared by the tabs (the `storage` event). Every session command rotates

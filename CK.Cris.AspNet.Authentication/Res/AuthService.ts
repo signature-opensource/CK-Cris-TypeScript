@@ -41,6 +41,13 @@ export function setLoginUserData( target: Map<string, string>, userData?: LoginU
  * session secrets (the cookies), so a tab that keeps an old token would be anonymous. The token alone is useless:
  * it is accepted by the server only with the binding cookie of its session (HttpOnly).
  * </p>
+ * <p>
+ * A refresh whose answer is a decision of the server (a SessionResult) is applied: a failed one ends the session.
+ * A refresh that decided nothing (the server could not be reached, or failed: a CommunicationError or an
+ * ExecutionError) keeps the session and is retried with a backoff (1 s, 2 s, 4 s... at most 30 s), endlessly: the server
+ * answers a decision when the session has really ended. Coming back online or to the tab retries at once. The server
+ * accepts the previous secrets once after a rotation whose answer has been lost.
+ * </p>
  */
 export class AuthService {
     #endpoint: HttpCrisEndpoint;
@@ -52,6 +59,9 @@ export class AuthService {
     #hook: HttpCrisEndpointHook;
     #onStorage: ( e: StorageEvent ) => void;
     #refreshTimer: ReturnType<typeof setTimeout>|undefined;
+    // The delay of the last retry of a refresh that decided nothing (0: no retry pending).
+    #retryDelay: number;
+    #onWakeUp: () => void;
     #isInitialized: Promise<void>;
     #closed: boolean;
     #availableSchemes: ReadonlyArray<string>;
@@ -65,6 +75,12 @@ export class AuthService {
      * The name of the lock (Web Locks API) that serializes the refreshes of the tabs.
      */
     public static readonly refreshLockName = "ck-auth-refresh";
+
+    /** The delay before the first retry of a refresh that decided nothing (1 second). */
+    public static readonly retryMinDelay = 1000;
+
+    /** The maximal delay between the retries of a refresh that decided nothing (30 seconds). */
+    public static readonly retryMaxDelay = 30000;
 
     /**
      * Creates a new AuthService and waits for its initialization: the cached token is used when it has not
@@ -90,6 +106,7 @@ export class AuthService {
         this.#info = new AuthenticationInfoPoco();
         this.#rememberMe = false;
         this.#closed = false;
+        this.#retryDelay = 0;
         this.#availableSchemes = [];
         this.#sent = new WeakMap();
         this.#sentCount = 0;
@@ -102,8 +119,18 @@ export class AuthService {
         this.#onStorage = e => {
             if( e.key === this.#storageKey ) this.#adopt( this.#readStorage() );
         };
+        this.#onWakeUp = () => {
+            if( this.#retryDelay && !this.#closed && (typeof document === "undefined" || document.visibilityState !== "hidden") ) {
+                this.#clearTimer();
+                this.#retryNow();
+            }
+        };
         endpoint.addHook( this.#hook );
-        if( typeof window !== "undefined" ) window.addEventListener( "storage", this.#onStorage );
+        if( typeof window !== "undefined" ) {
+            window.addEventListener( "storage", this.#onStorage );
+            window.addEventListener( "online", this.#onWakeUp );
+        }
+        if( typeof document !== "undefined" ) document.addEventListener( "visibilitychange", this.#onWakeUp );
         this.#isInitialized = this.#initializeAsync();
     }
 
@@ -309,7 +336,11 @@ export class AuthService {
         if( this.#closed ) return;
         this.#closed = true;
         this.#endpoint.removeHook( this.#hook );
-        if( typeof window !== "undefined" ) window.removeEventListener( "storage", this.#onStorage );
+        if( typeof window !== "undefined" ) {
+            window.removeEventListener( "storage", this.#onStorage );
+            window.removeEventListener( "online", this.#onWakeUp );
+        }
+        if( typeof document !== "undefined" ) document.removeEventListener( "visibilitychange", this.#onWakeUp );
         this.#clearTimer();
         this.#subscribers.clear();
     }
@@ -359,15 +390,21 @@ export class AuthService {
         }
         else if( r instanceof SessionResult ) {
             if( r.success && r.token ) this.#apply( r.info, r.token, r.rememberMe, true );
-            // A failed refresh ends the session (the server cleared it). A failed login or impersonation changes nothing.
+            // A failed refresh is a decision: it ends the session (the server cleared it). A failed login or impersonation
+            // changes nothing.
             else if( e.command instanceof RefreshSessionCommand ) this.#apply( undefined, undefined, false, true );
             else applied = false;
         }
-        else if( r instanceof CrisError && r.errorType !== "CommunicationError" ) {
-            // A refresh that failed on the server.
+        else if( r instanceof CrisError && r.errorType === "ValidationError" ) {
+            // A refresh refused by the validation: a decision too.
             this.#apply( undefined, undefined, false, true );
         }
-        else applied = false;
+        else {
+            // A refresh that decided nothing (the server could not be reached, or failed): the session is kept and the
+            // refresh is retried.
+            applied = false;
+            this.#scheduleRetry();
+        }
         if( applied ) this.#lastApplied = seq;
     }
 
@@ -382,6 +419,8 @@ export class AuthService {
     }
 
     #apply( info: AuthenticationInfoPoco|undefined, token: string|undefined, rememberMe: boolean, store: boolean ): void {
+        // A state is applied: the retries (if any) are over.
+        this.#retryDelay = 0;
         this.#info = info ?? new AuthenticationInfoPoco();
         this.#token = token;
         this.#rememberMe = rememberMe;
@@ -399,6 +438,18 @@ export class AuthService {
         // Refreshes at two thirds of the remaining time.
         const delay = Math.max( 1000, (exp - Date.now()) * 2 / 3 );
         this.#refreshTimer = setTimeout( () => { this.refresh().catch( e => console.error( "Session refresh failed.", e ) ); }, delay );
+    }
+
+    // Retries a refresh that decided nothing, with a backoff: 1 s, 2 s, 4 s... at most 30 s.
+    #scheduleRetry(): void {
+        if( this.#closed ) return;
+        this.#clearTimer();
+        this.#retryDelay = this.#retryDelay ? Math.min( this.#retryDelay * 2, AuthService.retryMaxDelay ) : AuthService.retryMinDelay;
+        this.#refreshTimer = setTimeout( () => this.#retryNow(), this.#retryDelay );
+    }
+
+    #retryNow(): void {
+        this.refresh().catch( e => console.error( "Session refresh failed.", e ) );
     }
 
     #clearTimer(): void {
