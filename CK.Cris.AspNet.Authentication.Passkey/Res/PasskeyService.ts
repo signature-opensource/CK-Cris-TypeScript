@@ -65,6 +65,7 @@ export class PasskeyService {
         if( !PasskeyService.isSupported ) return { error: 'Authentication.PasskeyNotSupported', cancelled: false };
         const start = await this.#endpoint.sendAsync( new StartPasskeyLoginCommand() );
         if( start.result instanceof CrisError ) return { error: start.result.message, cancelled: false };
+        if( start.result === undefined ) return PasskeyService.#noResult();
         const options = PasskeyService.#json.parseRequestOptionsFromJSON( JSON.parse( start.result ) );
         let credential: Credential | null;
         try {
@@ -80,6 +81,7 @@ export class PasskeyService {
         setLoginUserData( c.userData, userData );
         const r = await this.#endpoint.sendAsync( c );
         if( r.result instanceof CrisError ) return { error: r.result.message, cancelled: false };
+        if( r.result === undefined ) return PasskeyService.#noResult();
         if( !r.result.success ) return { result: r.result, error: PasskeyService.#firstError( r.result.userMessages, 'Authentication.PasskeyLoginFailed' ), cancelled: false };
         return { result: r.result, cancelled: false };
     }
@@ -96,6 +98,7 @@ export class PasskeyService {
         if( name ) s.name = name;
         const start = await this.#endpoint.sendAsync( s );
         if( start.result instanceof CrisError ) return { error: start.result.message, cancelled: false };
+        if( start.result === undefined ) return PasskeyService.#noResult();
         const options = PasskeyService.#json.parseCreationOptionsFromJSON( JSON.parse( start.result ) );
         let credential: Credential | null;
         try {
@@ -109,8 +112,14 @@ export class PasskeyService {
         c.response = JSON.stringify( ( credential as any ).toJSON() );
         const r = await this.#endpoint.sendAsync( c );
         if( r.result instanceof CrisError ) return { error: r.result.message, cancelled: false };
+        if( r.result === undefined ) return PasskeyService.#noResult();
         if( !r.result.success ) return { result: r.result, error: PasskeyService.#firstError( r.result.userMessages, 'Authentication.PasskeyRegistrationFailed' ), cancelled: false };
         return { result: r.result, cancelled: false };
+    }
+
+    // A command without a result (the endpoint answered nothing usable): never a success.
+    static #noResult<T>(): PasskeyOutcome<T> {
+        return { error: 'Authentication.PasskeyNoResult', cancelled: false };
     }
 
     static get #json(): WebAuthnJson {
