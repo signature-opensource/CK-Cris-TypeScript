@@ -242,7 +242,7 @@ public class HttpAuthenticationTests
         if( withRelay ) configuration.FirstBinPath.Types.Add( typeof( IAuthenticationSessionRelay ), typeof( FakeRelay ) );
         if( withAuthCenterRelay ) configuration.FirstBinPath.Types.Add( typeof( IAuthCenterCommandRelay ), typeof( FakeAuthCenterRelay ) );
         if( withOldStack ) configuration.FirstBinPath.Types.Add( typeof( CK.AspNet.Auth.AuthenticationInfoTokenService ), typeof( StdAuthenticationTypeSystem ) );
-        configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( target, typeof( IWhoAmIQCommand ), typeof( IWeakLoginCommand ), typeof( ILogoutSessionCommand ) );
+        configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( target, typeof( IWhoAmIQCommand ), typeof( IAuthCenterWhoAmIQCommand ), typeof( IWeakLoginCommand ), typeof( ILogoutSessionCommand ) );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
         var builder = WebApplication.CreateSlimBuilder();
         builder.Services.AddCrisAuthentication();
