@@ -32,8 +32,18 @@ public interface IWhoAmIQCommand : ICommand<string>
 {
 }
 
+/// <summary>
+/// Answers the CallerPartyId of the request.
+/// </summary>
+public interface IWhoCallsQCommand : ICommand<int>
+{
+}
+
 public sealed class WhoAmIHandler : ISingletonAutoService
 {
+    [CommandHandler]
+    public int Handle( IWhoCallsQCommand c, AuthenticationInfo info ) => info.CallerPartyId;
+
     [CommandHandler]
     public string Handle( IWhoAmIQCommand c, AuthenticationInfo info ) => info.UnsafeActor.IsAnonymous ? "Anonymous" : info.UnsafeActor.ActorName;
 }
@@ -168,7 +178,7 @@ public class HttpAuthenticationTests
 {
     internal static Task<RunningAspNetServer> StartServerAsync() => StartAsync();
 
-    static async Task<RunningAspNetServer> StartAsync( string? target = null, bool withOldStack = false )
+    static async Task<RunningAspNetServer> StartAsync( string? target = null, bool withOldStack = false, CK.AppIdentity.ILocalParty? localParty = null )
     {
         target ??= TestHelper.GetTypeScriptInlineTargetProjectPath( "StartAsync" );
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
@@ -186,6 +196,7 @@ public class HttpAuthenticationTests
                                               typeof( FakeWeakProvider ),
                                               typeof( WhoAmIHandler ),
                                               typeof( IWhoAmIQCommand ),
+                                              typeof( IWhoCallsQCommand ),
                                               typeof( IWeakLoginCommand ),
                                               typeof( ILogoutSessionCommand ),
                                               typeof( IRefreshSessionCommand ),
@@ -202,10 +213,12 @@ public class HttpAuthenticationTests
                                               typeof( IAuthAmbientValues ),
                                               typeof( ICultureAmbientValues ) );
         if( withOldStack ) configuration.FirstBinPath.Types.Add( typeof( CK.AspNet.Auth.AuthenticationInfoTokenService ), typeof( StdAuthenticationTypeSystem ) );
-        configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( target, typeof( IWhoAmIQCommand ), typeof( IWeakLoginCommand ), typeof( ILogoutSessionCommand ) );
+        configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( target, typeof( IWhoAmIQCommand ), typeof( IWhoCallsQCommand ), typeof( IWeakLoginCommand ), typeof( ILogoutSessionCommand ) );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
         var builder = WebApplication.CreateSlimBuilder();
         builder.Services.AddCrisAuthentication();
+        // The party model, when installed, provides the CurrentLocalParty.
+        if( localParty != null ) builder.Services.AddScoped( _ => new CK.AppIdentity.CurrentLocalParty( localParty ) );
         return await builder.CreateRunningAspNetServerAsync( map, app =>
         {
             app.UseCrisAuthentication();
@@ -483,5 +496,23 @@ public class HttpAuthenticationTests
         var texts = logs.ExtractCurrentTexts();
         texts.ShouldContain( t => t.Contains( "Unable to read Command Poco from request body" ), "The error is logged..." );
         texts.ShouldNotContain( t => t.Contains( "the-secret-value-3712" ), "...but never the body." );
+    }
+
+    [Test]
+    public async Task a_request_received_directly_has_the_local_party_as_its_caller_party_Async()
+    {
+        // Without party model, the CallerPartyId is 0.
+        await using( var server = await StartAsync() )
+        {
+            (await PostAsync( server, "/.cris", Create<IWhoCallsQCommand>( server ) )).Result.ShouldBe( 0 );
+        }
+        // With it, it is the PartyActorId of the current local party.
+        var config = CK.AppIdentity.ApplicationIdentityServiceConfiguration.Create( TestHelper.Monitor, c => c["FullName"] = "Test/$App" ).ShouldNotBeNull();
+        await using var identity = new CK.AppIdentity.ApplicationIdentityService( config, new ServiceCollection().BuildServiceProvider() );
+        identity.TrySetPartyActorId( TestHelper.Monitor, 3712 ).ShouldBeTrue();
+        await using( var server = await StartAsync( localParty: identity ) )
+        {
+            (await PostAsync( server, "/.cris", Create<IWhoCallsQCommand>( server ) )).Result.ShouldBe( 3712 );
+        }
     }
 }

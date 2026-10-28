@@ -9,6 +9,7 @@
     <PackageReference Include="CK.IO.Authentication.Weak" Version="3.0.0-0.cris-auth.0.ci.25" />
     <!-- Only for the "one stack" test: the old WebFrontAuth. -->
     <PackageReference Include="CK.AspNet.Auth" Version="32.0.2-0.cris-auth.0.ci.6" />
+    <PackageReference Include="CK.AppIdentity" Version="3.0.0-0.cris-auth.0.ci.7" />
     <PackageReference Include="CK.Testing.NUnit" Version="18.0.0-0.cris-auth.0.ci.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="6.3.0" />

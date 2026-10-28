@@ -1,3 +1,4 @@
+using CK.AppIdentity;
 using CK.Auth;
 using CK.Core;
 using CK.IO.Authentication;
@@ -83,7 +84,7 @@ public sealed class CrisAuthenticationMiddleware
         var auth = services.GetRequiredService<HttpAuthenticationContext>();
         var endpoint = new HttpSessionEndpoint( ctx );
         auth.HttpEndpoint = endpoint;
-        auth.Info = await AuthenticateAsync( monitor, services, endpoint );
+        auth.Info = (await AuthenticateAsync( monitor, services, endpoint )).WithCallerParty( GetCallerPartyId( services ) );
         if( ctx.Request.Path == _authPath )
         {
             await HandleCommandAsync( ctx, monitor, c => OverrideSessionCommand( monitor, c, endpoint ) );
@@ -111,6 +112,10 @@ public sealed class CrisAuthenticationMiddleware
         }
         return true;
     }
+
+    // A request is received directly: the party through which the identity entered is our local party. Its PartyActorId is
+    // 0 when the party model is not installed (no CurrentLocalParty) or when it is not resolved yet.
+    static int GetCallerPartyId( IServiceProvider services ) => services.GetService<CurrentLocalParty>()?.LocalParty.PartyActorId ?? 0;
 
     static async Task<AuthenticationInfo> AuthenticateAsync( IActivityMonitor monitor, IServiceProvider services, HttpSessionEndpoint endpoint )
     {
@@ -203,6 +208,7 @@ public sealed class CrisAuthenticationMiddleware
         var endpoint = new HttpSessionEndpoint( ctx );
         // A navigation carries no bearer: the request is anonymous.
         auth.HttpEndpoint = endpoint;
+        auth.Info = AuthenticationInfo.None.WithCallerParty( GetCallerPartyId( services ) );
         var presented = endpoint.PresentedRemoteLogin;
         endpoint.ClearRemoteLogin();
         var q = ctx.Request.Query;
