@@ -57,7 +57,6 @@ public abstract partial class CrisAspNetService : ISingletonAutoService
     }
 
     readonly RawCrisReceiver _validator;
-    readonly CrisBackgroundExecutorService _backgroundExecutor;
     internal readonly PocoDirectory _pocoDirectory;
     readonly IPocoFactory<ICrisCallResult> _resultFactory;
     readonly IPocoFactory<ICrisResultError> _crisErrorResultFactory;
@@ -67,18 +66,15 @@ public abstract partial class CrisAspNetService : ISingletonAutoService
     /// </summary>
     /// <param name="poco">The Poco directory.</param>
     /// <param name="validator">The raw validator service.</param>
-    /// <param name="backgroundExecutor">The background executor service.</param>
     /// <param name="resultFactory">The AspNet result factory.</param>
     /// <param name="errorResultFactory">The Cris error factory.</param>
     protected CrisAspNetService( PocoDirectory poco,
                                  RawCrisReceiver validator,
-                                 CrisBackgroundExecutorService backgroundExecutor,
                                  IPocoFactory<ICrisCallResult> resultFactory,
                                  IPocoFactory<ICrisResultError> errorResultFactory )
     {
         _pocoDirectory = poco;
         _validator = validator;
-        _backgroundExecutor = backgroundExecutor;
         _resultFactory = resultFactory;
         _crisErrorResultFactory = errorResultFactory;
     }
@@ -94,8 +90,12 @@ public abstract partial class CrisAspNetService : ISingletonAutoService
     }
 
     /// <summary>
-    /// Handles a command request parsed with the provided <paramref name="reader"/>: the command is
-    /// validated and executed by the <see cref="CrisBackgroundExecutorService"/> or inline if it can.
+    /// Handles a command request parsed with the provided <paramref name="reader"/>: the command is validated and executed.
+    /// <para>
+    /// Only the public commands are received (an <c>[Internal]</c> or <c>[Private]</c> command is refused before its
+    /// validation, on every route). When the incoming validation configures ambient services, the command executes inline
+    /// in a scope built from them (see <see cref="CrisExecutionContext.ExecuteRootCommandInlineAsync"/>).
+    /// </para>
     /// <para>
     /// Any specific input processing or pre processing can be done by the <paramref name="reader"/> function.
     /// Output of the <see cref="ICrisCallResult"/> MUST use the returned TypeFilterName.
@@ -109,7 +109,7 @@ public abstract partial class CrisAspNetService : ISingletonAutoService
     /// <param name="executeOverride">
     /// Optional execution override, called once the command is successfully validated: when it returns a task, the command
     /// is not executed here and the task's result is the command result. It returns null to let the command be executed here.
-    /// (The authentication relays the session commands to a remote authentication center this way.)
+    /// (The authentication refuses the remote login callback command sent by a client this way.)
     /// </param>
     /// <returns>The command result and the <see cref="ExchangeableRuntimeFilter.Name"/> to use to send the response.</returns>
     public async Task<(ICrisCallResult Result, string TypeFilterName)> HandleRequestAsync( IActivityMonitor monitor,
@@ -148,6 +148,15 @@ public abstract partial class CrisAspNetService : ISingletonAutoService
                     readResult.ValidationMessages.Error( refused, "Cris.AspNet.RouteRefused" );
                     result = CreateValidationErrorResult( readResult.ValidationMessages.UserMessages, null );
                 }
+                // Only the public commands come from outside the System: never an [Internal] nor a [Private] one, whatever
+                // the route (the type set of "/.cris/net" contains all the exchangeable commands).
+                else if( readResult.Command.CrisPocoModel.Exposure != CrisExposure.Public )
+                {
+                    var refused = $"Command '{readResult.Command.CrisPocoModel.PocoName}' is not accepted from HTTP.";
+                    monitor.Warn( ActivityMonitor.Tags.SecurityCritical, $"{refused} It is {readResult.Command.CrisPocoModel.Exposure}." );
+                    readResult.ValidationMessages.Error( refused, "Cris.AspNet.ExposureRefused" );
+                    result = CreateValidationErrorResult( readResult.ValidationMessages.UserMessages, null );
+                }
             }
             if( result == null )
             {
@@ -171,22 +180,15 @@ public abstract partial class CrisAspNetService : ISingletonAutoService
             if( result == null )
             {
                 Throw.DebugAssert( readResult.Command != null && readResult.TypeFilterName != null );
-                // If we have a AmbientServiceHub, then we must use the background executor.
-                IExecutedCommand executedCommand;
-                if( ambientServiceHub != null )
-                {
-                    var executing = _backgroundExecutor.Submit( monitor, readResult.Command, ambientServiceHub, issuerToken: depToken, incomingValidationCheck: false );
-                    executedCommand = await executing.ExecutedCommand;
-                    Throw.DebugAssert( executedCommand.DeferredExecutionContext == executing );
-                }
-                else
-                {
-                    var execContext = requestServices.GetRequiredService<CrisExecutionContext>();
-                    // Don't combine incoming validation message here as we don't expose the executed command: the messages
-                    // are built below for the IAspNetCrisResult.
-                    executedCommand = await execContext.ExecuteRootCommandAsync( readResult.Command );
-                    Throw.DebugAssert( executedCommand.DeferredExecutionContext == null );
-                }
+                // Don't combine incoming validation message here as we don't expose the executed command: the messages
+                // are built below for the IAspNetCrisResult.
+                // When the incoming validation configured ambient services, the command executes inline in a scope built
+                // from them (nothing is queued: the request doesn't wait behind the background work).
+                var execContext = requestServices.GetRequiredService<CrisExecutionContext>();
+                IExecutedCommand executedCommand = ambientServiceHub != null
+                                                    ? await execContext.ExecuteRootCommandInlineAsync( ambientServiceHub, readResult.Command )
+                                                    : await execContext.ExecuteRootCommandAsync( readResult.Command );
+                Throw.DebugAssert( executedCommand.DeferredExecutionContext == null );
                 // Build the IAspNetCrisResult.
                 result = _resultFactory.Create();
                 result.Result = executedCommand.Result;
