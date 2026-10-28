@@ -315,7 +315,7 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                                 /** 
                                  * Gets the command model.
                                  **/
-                                get commandModel(): CommandModel<this>;
+                                readonly commandModel: CommandModel<this>;
 
                                 readonly _brand: ICrisPoco["_brand"] & {"ICommand": any};
                             }
