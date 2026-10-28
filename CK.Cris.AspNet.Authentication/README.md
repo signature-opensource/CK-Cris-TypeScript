@@ -1,6 +1,6 @@
 # CK.Cris.AspNet.Authentication
 
-The HTTP front of the CK.AuthenticationInfo model (it replaces CK.AspNet.Auth / WebFrontAuth). The deployment target is
+The HTTP side of the CK.AuthenticationInfo model, for the front applications (it replaces CK.AspNet.Auth / WebFrontAuth). The deployment target is
 **same-origin**: the SPA and `/.cris` share the same origin, there is no CORS.
 
 ```csharp
@@ -27,28 +27,30 @@ The other old packages depend on one of these.
 | Route | What |
 |---|---|
 | `/.cris/auth` | The session commands (`ICommandAuthenticationSession`: logins, refresh, logout, impersonation) and only them. POST with a JSON content only. |
-| `/.cris/auth-center` | The commands executed by the authentication center (`ICommandAuthCenter`: the actor's self-service on its own login methods, the login schemes) and only them. POST with a JSON content only. The refresh cookie is not sent here. |
-| `/.cris` | The other commands. A session command or an authentication center command is refused here. |
+| `/.cris` | The other commands, wherever they are handled (the authentication center's ones included: where a command executes is a deployment detail). A session command is refused here. |
 | `/.auth/oidc/callback` | The callback of the remote logins (see below): a GET, outside `/.cris` (it is a cross-site navigation started by the provider). |
 
 The routes are declared once, on the package ([`CrisAspNetAuthenticationPackage`](CrisAspNetAuthenticationPackage.cs)):
 
 ```csharp
 [CrisRoute<ICommandAuthenticationSession>( AuthRoute )]
-[CrisRoute<ICommandAuthCenter>( AuthCenterRoute )]
 public class CrisAspNetAuthenticationPackage : TypeScriptPackage
 ```
 
-These declarations are used by both sides: the generated TypeScript client posts each command to its route, and
-`CrisAspNetService` accepts a command only on its route (and a route accepts only its commands). The execution is
-overridden on both routes (the `executeOverride` of `CrisAspNetService.HandleRequestAsync`):
-- in a front (an application that references CK.AppIdentity.Cris.AuthCenter.Remote), a session command is relayed to
-  its remote authentication center (`IAuthenticationSessionRelay`), never executed here;
-- an authentication center command is relayed, after its incoming validation here, with the caller's proof: the bearer
-  token and the hash of the binding secret (`IAuthCenterCommandRelay`, `IAuthenticationSessionEndpoint.PresentedBindingSecretHash`).
-  The remote authentication center establishes the identity again.
+This declaration is used by both sides: the generated TypeScript client posts each command to its route, and
+`CrisAspNetService` accepts a command only on its route (and a route accepts only its commands).
 
-Both are executed here otherwise (no authentication center, or a local one).
+A session command is always executed here, by this endpoint (CK.Cris.Authentication): what it needs from the
+authentication center is an operation that the endpoint executes, locally in the authentication center application,
+dispatched to it from a remote of it (CK.AppIdentity.Cris). The other commands handled by the authentication center are
+dispatched the same way, with the user's proof (see CK.AppIdentity.Cris.Authentication).
+
+Only the public commands are received: an `[Internal]` or `[Private]` command is refused on every route (see
+`CrisAspNetService.HandleRequestAsync`).
+
+**The caller party.** A request is received directly: the `CallerPartyId` of its `AuthenticationInfo` is the
+`PartyActorId` of the `CurrentLocalParty` (this package references CK.AppIdentity.Abstractions). It is 0 when the party
+model is not installed (no `IApplicationIdentityService`) or when the identifier is not resolved yet.
 
 ## Same origin, always checked
 
@@ -67,8 +69,8 @@ which a sibling sub-domain bypasses.
 
 `HttpOnly`, `SameSite=Strict` (except `ck-auth-login`), host-only, `Secure` (except over http on a loopback address, for the development);
 persistent when the session is remembered. The secrets are generated here: the authentication center only knows their
-hashes (base64url SHA-256). When a session command is relayed, the next secrets are prepared before the relay and their
-hashes travel with the command.
+hashes (base64url SHA-256). When a session command needs the authentication center, the next secrets are prepared
+before its operation is executed and only their hashes travel with it.
 
 ## The bearer token
 
@@ -97,7 +99,7 @@ auth.actor.actorName; // "Alice"
   (a failed `SessionResult` or a validation error: the server has decided, the session ends). A failed login or
   impersonation changes nothing.
 - **A refresh that decided nothing is retried.** When the server could not be reached or failed (a `CommunicationError`
-  or an `ExecutionError`, including a front that cannot reach its authentication center), the session is kept and the
+  or an `ExecutionError`, including a remote that cannot reach its authentication center), the session is kept and the
   refresh is retried with a backoff: 1 s, 2 s, 4 s... at most 30 s (`retryMinDelay`, `retryMaxDelay`), endlessly. The
   server answers a decision when the session has really ended. Coming back online or to the tab (`online`,
   `visibilitychange`) retries at once. If the refresh was executed but its answer lost, the authentication center
@@ -116,13 +118,13 @@ auth.actor.actorName; // "Alice"
 ## The remote logins (OpenID Connect)
 
 The authentication center holds the client secrets and does the protocol (see CK.AppIdentity.Cris.AuthCenter). This
-front:
+endpoint:
 
 1. **Start:** an `IStartLoginCommand` on `/.cris/auth`. The endpoint gives its callback URL (`/.auth/oidc/callback` of the
    request's origin: the authentication center accepts only the configured ones) and sets the `ck-auth-login` cookie
    (the hash of its correlation secret goes with the pending login). The result is the provider's URL.
-2. **Callback:** the provider redirects the browser to `/.auth/oidc/callback?state=...&code=...`. The front builds the
-   `IRemoteLoginCallbackCommand` (a client never sends it: it is refused on `/.cris/auth`), relays or executes it, and
+2. **Callback:** the provider redirects the browser to `/.auth/oidc/callback?state=...&code=...`. The endpoint builds the
+   `IRemoteLoginCallbackCommand` (a client never sends it: it is refused on `/.cris/auth`), executes it, and
    deletes the `ck-auth-login` cookie. The session cookies are set here; the response never carries a token.
 3. **End:**
    - **popup:** a page that posts `{ type: "ck-auth-remote-login", success, error }` to its own origin and closes (CSP with

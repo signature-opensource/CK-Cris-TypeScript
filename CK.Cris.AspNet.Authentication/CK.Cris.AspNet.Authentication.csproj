@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Description>The HTTP front of the CK.AuthenticationInfo model: the "/.cris/auth" route of the session commands, the session cookies and the bearer tokens of "/.cris".</Description>
+    <Description>The HTTP side of the CK.AuthenticationInfo model: the "/.cris/auth" route of the session commands, the session cookies and the bearer tokens of "/.cris".</Description>
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
