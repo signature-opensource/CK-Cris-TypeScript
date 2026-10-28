@@ -79,19 +79,39 @@ public sealed class FakeLoginHandlers : ISingletonAutoService
         return Issue( endpoint, cmd, cmd.WeakActorName, rememberMe: false, weak: true );
     }
 
+    // The refresh and the logout are executed by the endpoint (CK.Cris.Authentication): these are the operations that the
+    // authentication center handles for them.
     [CommandHandler]
-    public ISessionResult Handle( IRefreshSessionCommand cmd, IAuthenticationSessionEndpoint endpoint )
+    public ISessionOperationResult Handle( IRefreshSessionOperationCommand op, PocoDirectory pocos )
     {
-        if( endpoint.PresentedProof == null )
+        if( op.PresentedSessionKey == null )
         {
-            endpoint.Clear();
-            return cmd.CreateResult( r => r.Success = false );
+            return op.CreateResult( r =>
+            {
+                r.Cleared = true;
+                r.Result = pocos.Create<ISessionResult>( s => s.Success = false );
+            } );
         }
-        return Issue( endpoint, cmd, "Albert", rememberMe: true );
+        var utcNow = DateTime.UtcNow;
+        var info = AuthenticationInfo.Create( new ActorInfo( 3712, "Albert", CK.Core.AuthLevel.Normal, [new SchemeInfo( "Basic", utcNow )] ), utcNow.AddHours( 1 ), null, "D", utcNow );
+        var token = "token-" + Guid.NewGuid().ToString( "N" );
+        FakeTokenReader.Tokens[token] = new AuthenticationTokenData( info, op.NextBindingSecretHash );
+        return op.CreateResult( r =>
+        {
+            r.IssuedSessionKey = "3712.the-session";
+            r.RememberMe = true;
+            r.RefreshExpires = utcNow.AddHours( 1 );
+            r.Result = pocos.Create<ISessionResult>( s =>
+            {
+                s.Info.InitializeFrom( info );
+                s.Token = token;
+                s.RememberMe = true;
+            } );
+        } );
     }
 
     [CommandHandler]
-    public void Handle( ILogoutSessionCommand cmd, IAuthenticationSessionEndpoint endpoint ) => endpoint.Clear();
+    public ISessionOperationResult Handle( ILogoutSessionOperationCommand op ) => op.CreateResult( r => r.Cleared = true );
 
     [CommandHandler]
     public IList<string> Handle( IGetLoginSchemesQCommand cmd ) => ["Basic", "Oidc.Google", "Oidc.Microsoft", "Passkey"];
@@ -147,6 +167,9 @@ public class E2ETests
                                               typeof( IPasskeyRegistrationResult ),
                                               typeof( ILogoutSessionCommand ),
                                               typeof( IRefreshSessionCommand ),
+                                              typeof( IRefreshSessionOperationCommand ),
+                                              typeof( ILogoutSessionOperationCommand ),
+                                              typeof( ISessionOperationResult ),
                                               typeof( ISessionResult ),
                                               typeof( IAuthenticationInfoPoco ),
                                               typeof( IActorInfoPoco ),

@@ -36,30 +36,6 @@ public sealed class WhoAmIHandler : ISingletonAutoService
 {
     [CommandHandler]
     public string Handle( IWhoAmIQCommand c, AuthenticationInfo info ) => info.UnsafeActor.IsAnonymous ? "Anonymous" : info.UnsafeActor.ActorName;
-
-    [CommandHandler]
-    public string Handle( IAuthCenterWhoAmIQCommand c, AuthenticationInfo info ) => "Here: " + (info.UnsafeActor.IsAnonymous ? "Anonymous" : info.UnsafeActor.ActorName);
-}
-
-/// <summary>
-/// A command executed by the authentication center (its route is "/.cris/auth-center").
-/// </summary>
-public interface IAuthCenterWhoAmIQCommand : ICommand<string>, ICommandAuthCenter
-{
-}
-
-/// <summary>
-/// A relay of the commands executed by the authentication center: it answers with the binding secret hash presented by
-/// the endpoint (what a real relay sends with the token).
-/// </summary>
-public sealed class FakeAuthCenterRelay : IAuthCenterCommandRelay
-{
-    readonly IAuthenticationSessionEndpoint _endpoint;
-
-    public FakeAuthCenterRelay( IAuthenticationSessionEndpoint endpoint ) => _endpoint = endpoint;
-
-    public Task<object?> RelayAsync( IActivityMonitor monitor, ICommandAuthCenter command )
-        => Task.FromResult<object?>( "Relayed: " + (_endpoint.PresentedBindingSecretHash ?? "no binding") );
 }
 
 public sealed class NoActor : IActorInfoProvider
@@ -187,24 +163,12 @@ public sealed class FakeRemoteLogin : ISingletonAutoService
     }
 }
 
-/// <summary>
-/// A relay that answers every session command (as a remote authentication center would): a weak login gets the
-/// "relayed" token, the other commands a null result.
-/// </summary>
-public sealed class FakeRelay : IAuthenticationSessionRelay
-{
-    public Task<object?> RelayAsync( IActivityMonitor monitor, ICommandAuthenticationSession command )
-    {
-        return Task.FromResult<object?>( command is IWeakLoginCommand login ? login.CreateResult( r => r.Token = "relayed" ) : null );
-    }
-}
-
 [TestFixture]
 public class HttpAuthenticationTests
 {
     internal static Task<RunningAspNetServer> StartServerAsync() => StartAsync();
 
-    static async Task<RunningAspNetServer> StartAsync( bool withRelay = false, string? target = null, bool withOldStack = false, bool withAuthCenterRelay = false )
+    static async Task<RunningAspNetServer> StartAsync( string? target = null, bool withOldStack = false )
     {
         target ??= TestHelper.GetTypeScriptInlineTargetProjectPath( "StartAsync" );
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
@@ -222,7 +186,6 @@ public class HttpAuthenticationTests
                                               typeof( FakeWeakProvider ),
                                               typeof( WhoAmIHandler ),
                                               typeof( IWhoAmIQCommand ),
-                                              typeof( IAuthCenterWhoAmIQCommand ),
                                               typeof( IWeakLoginCommand ),
                                               typeof( ILogoutSessionCommand ),
                                               typeof( IRefreshSessionCommand ),
@@ -238,10 +201,8 @@ public class HttpAuthenticationTests
                                               typeof( CK.Cris.AmbientValues.AmbientValuesService ),
                                               typeof( IAuthAmbientValues ),
                                               typeof( ICultureAmbientValues ) );
-        if( withRelay ) configuration.FirstBinPath.Types.Add( typeof( IAuthenticationSessionRelay ), typeof( FakeRelay ) );
-        if( withAuthCenterRelay ) configuration.FirstBinPath.Types.Add( typeof( IAuthCenterCommandRelay ), typeof( FakeAuthCenterRelay ) );
         if( withOldStack ) configuration.FirstBinPath.Types.Add( typeof( CK.AspNet.Auth.AuthenticationInfoTokenService ), typeof( StdAuthenticationTypeSystem ) );
-        configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( target, typeof( IWhoAmIQCommand ), typeof( IAuthCenterWhoAmIQCommand ), typeof( IWeakLoginCommand ), typeof( ILogoutSessionCommand ) );
+        configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( target, typeof( IWhoAmIQCommand ), typeof( IWeakLoginCommand ), typeof( ILogoutSessionCommand ) );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
         var builder = WebApplication.CreateSlimBuilder();
         builder.Services.AddCrisAuthentication();
@@ -491,49 +452,6 @@ public class HttpAuthenticationTests
         (await SendAsync( self, "same-origin", method: HttpMethod.Put )).ShouldBe( HttpStatusCode.MethodNotAllowed );
     }
 
-    [Test]
-    public async Task auth_center_commands_go_to_cris_auth_center_and_only_them_Async()
-    {
-        await using var server = await StartAsync();
-        async Task<string> PostTextAsync( string path, IPoco command )
-            => await (await server.Client.PostJsonAsync( path, ToJson( server, command ) )).Content.ReadAsStringAsync();
-        // The route is declared by [CrisRoute<ICommandAuthCenter>( "/.cris/auth-center" )] on the CrisAspNetAuthenticationPackage.
-        (await PostTextAsync( "/.cris", Create<IAuthCenterWhoAmIQCommand>( server ) )).ShouldContain( "must be sent to \\u0027/.cris/auth-center\\u0027" );
-        (await PostTextAsync( "/.cris/auth", Create<IAuthCenterWhoAmIQCommand>( server ) )).ShouldContain( "must be sent to \\u0027/.cris/auth-center\\u0027" );
-        (await PostTextAsync( "/.cris/auth-center", Create<IWhoAmIQCommand>( server ) )).ShouldContain( "must be sent to \\u0027/.cris\\u0027" );
-        (await PostTextAsync( "/.cris/auth-center", Create<IWeakLoginCommand>( server, c => c.WeakActorName = "Operator" ) )).ShouldContain( "must be sent to \\u0027/.cris/auth\\u0027" );
-        // Without relay (no authentication center, or a local one), the command is executed here.
-        (await PostAsync( server, "/.cris/auth-center", Create<IAuthCenterWhoAmIQCommand>( server ) )).Result.ShouldBe( "Here: Anonymous" );
-    }
-
-    [Test]
-    public async Task a_relay_answers_the_auth_center_commands_with_the_binding_of_the_caller_Async()
-    {
-        await using var server = await StartAsync( withAuthCenterRelay: true );
-        (await PostAsync( server, "/.cris/auth-center", Create<IAuthCenterWhoAmIQCommand>( server ) )).Result.ShouldBe( "Relayed: no binding" );
-
-        // A login (executed here) sets the binding cookie: the relay presents its hash (the refresh cookie is not needed).
-        var r = await server.Client.PostJsonAsync( "/.cris/auth?UsePascalCase", ToJson( server, Create<IWeakLoginCommand>( server, c => c.WeakActorName = "Operator" ) ) );
-        var binding = r.Headers.GetValues( "Set-Cookie" ).Single( c => c.StartsWith( CrisAuthenticationCookies.BindingCookieName + "=" ) );
-        var secret = binding.Substring( CrisAuthenticationCookies.BindingCookieName.Length + 1, binding.IndexOf( ';' ) - CrisAuthenticationCookies.BindingCookieName.Length - 1 );
-        var expected = System.Buffers.Text.Base64Url.EncodeToString( System.Security.Cryptography.SHA256.HashData( Encoding.ASCII.GetBytes( secret ) ) );
-        (await PostAsync( server, "/.cris/auth-center", Create<IAuthCenterWhoAmIQCommand>( server ) )).Result.ShouldBe( "Relayed: " + expected );
-    }
-
-    [Test]
-    public async Task a_relay_answers_the_session_commands_instead_of_the_handlers_Async()
-    {
-        await using var server = await StartAsync( withRelay: true );
-        FakeWeakProvider.Called = 0;
-        var r = await PostAsync( server, "/.cris/auth", Create<IWeakLoginCommand>( server, c => c.WeakActorName = "Operator" ) );
-        ((ISessionResult)r.Result.ShouldNotBeNull()).Token.ShouldBe( "relayed" );
-        FakeWeakProvider.Called.ShouldBe( 0, "Relayed: not executed here." );
-    }
-}
-
-[TestFixture]
-public class HttpFixesTests
-{
     [Test]
     public async Task cris_requires_JSON_and_answers_JSON_without_sniffing_Async()
     {

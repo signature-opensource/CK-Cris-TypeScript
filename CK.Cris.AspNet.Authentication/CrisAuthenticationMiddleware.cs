@@ -29,14 +29,8 @@ namespace CK.Cris.AspNet.Authentication;
 ///   </item>
 ///   <item>
 ///   <b>"/.cris/auth":</b> the route of the session commands (and only them, see <see cref="CrisAspNetAuthenticationPackage"/>). It
-///   accepts only POST with a JSON content. A session command is relayed to the remote authentication center by a front
-///   (an application that has an <see cref="IAuthenticationSessionRelay"/>), executed here otherwise.
-///   </item>
-///   <item>
-///   <b>"/.cris/auth-center":</b> the route of the commands executed by the authentication center (<see cref="ICommandAuthCenter"/>,
-///   and only them). It accepts only POST with a JSON content. After its incoming validation, a command is relayed with the
-///   caller's proof to the remote authentication center by a front (<see cref="IAuthCenterCommandRelay"/>), executed
-///   here otherwise. The refresh cookie is not sent to this route.
+///   accepts only POST with a JSON content. A session command is always executed here, by this endpoint (what it needs from
+///   the authentication center is an operation, executed or dispatched by CK.Cris.Authentication).
 ///   </item>
 /// </list>
 /// </summary>
@@ -44,7 +38,6 @@ public sealed class CrisAuthenticationMiddleware
 {
     static readonly PathString _crisPath = new PathString( "/.cris" );
     static readonly PathString _authPath = new PathString( CrisAspNetAuthenticationPackage.AuthRoute );
-    static readonly PathString _authCenterPath = new PathString( CrisAspNetAuthenticationPackage.AuthCenterRoute );
     static readonly PathString _callbackPath = new PathString( CrisAuthenticationCookies.RemoteLoginCallbackPath );
     readonly RequestDelegate _next;
     readonly CrisAspNetService _service;
@@ -93,14 +86,7 @@ public sealed class CrisAuthenticationMiddleware
         auth.Info = await AuthenticateAsync( monitor, services, endpoint );
         if( ctx.Request.Path == _authPath )
         {
-            var relay = services.GetService<IAuthenticationSessionRelay>();
-            await HandleCommandAsync( ctx, monitor, c => OverrideSessionCommand( monitor, c, relay, endpoint ) );
-            return;
-        }
-        if( ctx.Request.Path == _authCenterPath )
-        {
-            var relay = services.GetService<IAuthCenterCommandRelay>();
-            await HandleCommandAsync( ctx, monitor, c => relay != null && c is ICommandAuthCenter a ? relay.RelayAsync( monitor, a ) : null );
+            await HandleCommandAsync( ctx, monitor, c => OverrideSessionCommand( monitor, c, endpoint ) );
             return;
         }
         await _next( ctx );
@@ -176,9 +162,8 @@ public sealed class CrisAuthenticationMiddleware
     }
 
     // A remote login callback is built by the callback endpoint only: a client never sends it.
-    // A starting remote login records how it ends (only the front needs it: see HttpSessionEndpoint.PrepareRemoteLogin).
-    // Then the relay to the remote AuthCenter of a front (null: executed here).
-    Task<object?>? OverrideSessionCommand( IActivityMonitor monitor, IAbstractCommand c, IAuthenticationSessionRelay? relay, HttpSessionEndpoint endpoint )
+    // A starting remote login records how it ends (see HttpSessionEndpoint.PrepareRemoteLogin). Then executed here (null).
+    Task<object?>? OverrideSessionCommand( IActivityMonitor monitor, IAbstractCommand c, HttpSessionEndpoint endpoint )
     {
         if( c is IRemoteLoginCallbackCommand )
         {
@@ -188,7 +173,7 @@ public sealed class CrisAuthenticationMiddleware
                                                                                                                              "Authentication.InvalidCommand" ) ) ) );
         }
         if( c is IStartLoginCommand start ) endpoint.SetRemoteLoginEnd( start.InlineMode, start.ReturnUrl );
-        return relay != null && c is ICommandAuthenticationSession s ? relay.RelayAsync( monitor, s ) : null;
+        return null;
     }
 
     /// <summary>
@@ -197,7 +182,7 @@ public sealed class CrisAuthenticationMiddleware
     /// </summary>
     public const string RemoteLoginMarker = "ck-auth-login";
 
-    // The GET to which the provider redirects the browser. It relays (or executes) the IRemoteLoginCallbackCommand, deletes the
+    // The GET to which the provider redirects the browser. It executes the IRemoteLoginCallbackCommand, deletes the
     // remote login cookie, and ends the login: a popup page that posts { type, success, error } to its own origin (no token),
     // or a redirection to the return URL of an inline login, with the marker. The response never carries a token: the client
     // refreshes its session with the cookies set here.
@@ -268,18 +253,20 @@ public sealed class CrisAuthenticationMiddleware
                                      """ ).ConfigureAwait( false );
     }
 
-    // The callback command is relayed to the remote AuthCenter of a front or executed here (validated first).
+    // The callback command is executed here, like any received command: validated first, with the ambient services its
+    // incoming validation configures (executed inline in a scope built from them).
     static async Task<object?> ExecuteAsync( IActivityMonitor monitor, IServiceProvider services, IRemoteLoginCallbackCommand command )
     {
-        var relay = services.GetService<IAuthenticationSessionRelay>();
-        if( relay != null ) return await relay.RelayAsync( monitor, command ).ConfigureAwait( false );
         var validation = await services.GetRequiredService<RawCrisReceiver>().IncomingValidateAsync( monitor, services, command ).ConfigureAwait( false );
         if( !validation.Success )
         {
             monitor.Warn( $"The remote login callback is invalid: {validation.ValidationMessages.Select( m => m.Text ).Concatenate()}" );
             return null;
         }
-        var executed = await services.GetRequiredService<CrisExecutionContext>().ExecuteRootCommandAsync( command ).ConfigureAwait( false );
+        var context = services.GetRequiredService<CrisExecutionContext>();
+        IExecutedCommand executed = validation.AmbientServiceHub is { } hub
+                        ? await context.ExecuteRootCommandInlineAsync( hub, command ).ConfigureAwait( false )
+                        : await context.ExecuteRootCommandAsync( (IAbstractCommand)command ).ConfigureAwait( false );
         return executed.Result;
     }
 
