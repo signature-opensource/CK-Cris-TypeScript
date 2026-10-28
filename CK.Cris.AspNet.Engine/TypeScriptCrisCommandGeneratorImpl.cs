@@ -19,6 +19,7 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
 {
     ITSCodeGenerator? ITSCodeGeneratorFactory.CreateTypeScriptGenerator( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
     {
+        if( !CheckOnlyPublicCommands( monitor, initializer ) ) return null;
         if( initializer.EnsureRegister( monitor, typeof( ICrisCallResult ), mustBePocoType: true )
                && initializer.EnsureRegister( monitor, typeof( ICrisResultError ), mustBePocoType: true )
                && initializer.EnsureRegister( monitor, typeof( IAmbientValues ), mustBePocoType: true )
@@ -27,6 +28,31 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
             return new CodeGen();
         }
         return null;
+    }
+
+    // The TypeScript type set is what a front application sends: an [Internal] or [Private] command never belongs to it
+    // (HTTP refuses them anyway). The registration doesn't tell whether a type has been registered explicitly or by a
+    // glob: it is always an error, the fix is in the message.
+    static bool CheckOnlyPublicCommands( IActivityMonitor monitor, ITypeScriptContextInitializer initializer )
+    {
+        bool success = true;
+        foreach( var r in initializer.RegisteredTypes.Values )
+        {
+            if( r.PocoType is not IPrimaryPocoType p || !typeof( IAbstractCommand ).IsAssignableFrom( p.Type ) ) continue;
+            var family = p.FamilyInfo;
+            var interfaces = family.Interfaces.Select( i => i.PocoInterface ).Concat( family.OtherInterfaces );
+            string? exposure = interfaces.Any( t => t.IsDefined( typeof( PrivateAttribute ), false ) )
+                                ? "[Private]"
+                                : interfaces.Any( t => t.IsDefined( typeof( InternalAttribute ), false ) )
+                                    ? "[Internal]"
+                                    : null;
+            if( exposure != null )
+            {
+                monitor.Error( $"Command '{p.ExternalOrCSharpName}' is {exposure}: it cannot be a TypeScript type (it is never received from a front application). Remove it from the TypeScript types or add it to the excluded types of the TypeScript configuration." );
+                success = false;
+            }
+        }
+        return success;
     }
 
     sealed class CodeGen : ITSCodeGenerator

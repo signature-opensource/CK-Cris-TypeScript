@@ -122,4 +122,20 @@ public class ExposureAndInlineTests
         }
         await blocking.ExecutedCommand.WaitAsync( TimeSpan.FromSeconds( 10 ) );
     }
+
+    [Test]
+    public async Task an_Internal_or_Private_command_cannot_be_a_TypeScript_type_Async()
+    {
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( IPublicCommand ),
+                                              typeof( IInternalCommand ),
+                                              typeof( Handlers ),
+                                              typeof( CrisAspNetService ),
+                                              typeof( AuthenticationInfoTokenService ),
+                                              typeof( StdAuthenticationTypeSystem ) );
+        configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( TestHelper.GetTypeScriptInlineTargetProjectPath(),
+                                                                        typeof( IPublicCommand ),
+                                                                        typeof( IInternalCommand ) );
+        await configuration.GetFailedAutomaticServicesAsync( "Command 'CK.Cris.AspNet.Tests.ExposureAndInlineTests.IInternalCommand' is [Internal]: it cannot be a TypeScript type" );
+    }
 }
