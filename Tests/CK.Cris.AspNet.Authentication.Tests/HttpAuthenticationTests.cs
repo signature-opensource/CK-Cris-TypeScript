@@ -178,7 +178,7 @@ public class HttpAuthenticationTests
 {
     internal static Task<RunningAspNetServer> StartServerAsync() => StartAsync();
 
-    static async Task<RunningAspNetServer> StartAsync( string? target = null, bool withOldStack = false, CK.AppIdentity.ILocalParty? localParty = null )
+    static async Task<RunningAspNetServer> StartAsync( string? target = null, bool withOldStack = false, CK.AppIdentity.ApplicationIdentityService? identity = null )
     {
         target ??= TestHelper.GetTypeScriptInlineTargetProjectPath( "StartAsync" );
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
@@ -217,8 +217,12 @@ public class HttpAuthenticationTests
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
         var builder = WebApplication.CreateSlimBuilder();
         builder.Services.AddCrisAuthentication();
-        // The party model, when installed, provides the CurrentLocalParty.
-        if( localParty != null ) builder.Services.AddScoped( _ => new CK.AppIdentity.CurrentLocalParty( localParty ) );
+        // The party model, when installed: the identity service and the CurrentLocalParty.
+        if( identity != null )
+        {
+            builder.Services.AddSingleton<CK.AppIdentity.IApplicationIdentityService>( identity );
+            builder.Services.AddScoped( _ => new CK.AppIdentity.CurrentLocalParty( identity ) );
+        }
         return await builder.CreateRunningAspNetServerAsync( map, app =>
         {
             app.UseCrisAuthentication();
@@ -510,7 +514,7 @@ public class HttpAuthenticationTests
         var config = CK.AppIdentity.ApplicationIdentityServiceConfiguration.Create( TestHelper.Monitor, c => c["FullName"] = "Test/$App" ).ShouldNotBeNull();
         await using var identity = new CK.AppIdentity.ApplicationIdentityService( config, new ServiceCollection().BuildServiceProvider() );
         identity.TrySetPartyActorId( TestHelper.Monitor, 3712 ).ShouldBeTrue();
-        await using( var server = await StartAsync( localParty: identity ) )
+        await using( var server = await StartAsync( identity: identity ) )
         {
             (await PostAsync( server, "/.cris", Create<IWhoCallsQCommand>( server ) )).Result.ShouldBe( 3712 );
         }

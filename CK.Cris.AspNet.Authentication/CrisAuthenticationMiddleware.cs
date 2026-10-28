@@ -114,8 +114,15 @@ public sealed class CrisAuthenticationMiddleware
     }
 
     // A request is received directly: the party through which the identity entered is our local party. Its PartyActorId is
-    // 0 when the party model is not installed (no CurrentLocalParty) or when it is not resolved yet.
-    static int GetCallerPartyId( IServiceProvider services ) => services.GetService<CurrentLocalParty>()?.LocalParty.PartyActorId ?? 0;
+    // 0 when the party model is not installed or when it is not resolved yet. The party model is installed when there is an
+    // IApplicationIdentityService (referencing CK.AppIdentity.Abstractions registers the CurrentLocalParty, but its default
+    // value then cannot be resolved without it).
+    static int GetCallerPartyId( IServiceProvider services )
+    {
+        return services.GetService<IApplicationIdentityService>() != null
+                ? services.GetRequiredService<CurrentLocalParty>().LocalParty.PartyActorId
+                : 0;
+    }
 
     static async Task<AuthenticationInfo> AuthenticateAsync( IActivityMonitor monitor, IServiceProvider services, HttpSessionEndpoint endpoint )
     {
