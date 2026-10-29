@@ -36,56 +36,71 @@ public sealed class FakeTokenReader : IAuthenticationTokenReader
 }
 
 /// <summary>
-/// The fake login provider: "Albert" (actor 3712) with the password "success". The sessions are Normal.
+/// The fake authentication center: the operations that the session command handlers of the endpoint
+/// (CK.Cris.Authentication and its .Basic, .Weak and .Passkey packages, brought by the Ng packages) execute.
+/// The Basic provider knows "Albert" (actor 3712) with the password "success"; the weak provider knows "Operator".
 /// </summary>
-public sealed class FakeLoginHandlers : ISingletonAutoService
+public sealed class FakeAuthCenterOperations : ISingletonAutoService
 {
     // A login gives a Normal session (Critical for a passkey login, like the real authentication center).
-    static ISessionResult Issue( IAuthenticationSessionEndpoint endpoint, ICommand<ISessionResult> command, string name, bool rememberMe, bool weak = false, bool critical = false, TimeSpan? criticalLifetime = null )
+    static ISessionOperationResult Issue<T>( T op, PocoDirectory pocos, string name, bool rememberMe, bool weak = false, bool critical = false, TimeSpan? criticalLifetime = null )
+        where T : ICommand<ISessionOperationResult>, ICommandNextSessionSecrets
     {
         var utcNow = DateTime.UtcNow;
-        var proof = endpoint.Issue( weak ? "42.the-session" : "3712.the-session", rememberMe, utcNow.AddHours( 1 ) );
         var actor = weak
                         ? new ActorInfo( 42, name, CK.Core.AuthLevel.Unsafe, [new SchemeInfo( ActorInfo.WeakScheme, utcNow )] )
                         : new ActorInfo( 3712, name, critical ? CK.Core.AuthLevel.Critical : CK.Core.AuthLevel.Normal, [new SchemeInfo( critical ? "Passkey" : "Basic", utcNow )] );
         var info = AuthenticationInfo.Create( actor, utcNow.AddHours( 1 ), critical ? utcNow + (criticalLifetime ?? TimeSpan.FromMinutes( 5 )) : null, "D", utcNow );
         var token = "token-" + Guid.NewGuid().ToString( "N" );
-        FakeTokenReader.Tokens[token] = new AuthenticationTokenData( info, proof.BindingSecretHash );
-        return command.CreateResult( r =>
+        FakeTokenReader.Tokens[token] = new AuthenticationTokenData( info, op.NextBindingSecretHash );
+        return op.CreateResult( r =>
         {
-            r.Info.InitializeFrom( info );
-            r.Token = token;
+            r.IssuedSessionKey = weak ? "42.the-session" : "3712.the-session";
             r.RememberMe = rememberMe;
+            r.RefreshExpires = utcNow.AddHours( 1 );
+            r.Result = pocos.Create<ISessionResult>( s =>
+            {
+                s.Info.InitializeFrom( info );
+                s.Token = token;
+                s.RememberMe = rememberMe;
+            } );
         } );
     }
 
-    [CommandHandler]
-    public ISessionResult Handle( IBasicLoginCommand cmd, IAuthenticationSessionEndpoint endpoint )
-    {
-        // "critical-1s": a Critical session that ends one second later.
-        if( cmd.UserName == "Albert" && cmd.Password == "critical-1s" )
+    static ISessionOperationResult Refuse( ICommand<ISessionOperationResult> op, PocoDirectory pocos, string text, string resName )
+        => op.CreateResult( r => r.Result = pocos.Create<ISessionResult>( s =>
         {
-            return Issue( endpoint, cmd, cmd.UserName, cmd.RememberMe, critical: true, criticalLifetime: TimeSpan.FromSeconds( 1 ) );
-        }
-        if( cmd.UserName != "Albert" || cmd.Password != "success" )
-        {
-            return cmd.CreateResult( r => { r.Success = false; r.UserMessages.Add( UserMessage.Error( NormalizedCultureInfo.CodeDefault, "Invalid credentials.", "Test.InvalidCredentials" ) ); } );
-        }
-        return Issue( endpoint, cmd, cmd.UserName, cmd.RememberMe );
-    }
+            s.Success = false;
+            s.UserMessages.Add( UserMessage.Error( NormalizedCultureInfo.CodeDefault, text, resName ) );
+        } ) );
 
     [CommandHandler]
-    public ISessionResult Handle( IWeakLoginCommand cmd, IAuthenticationSessionEndpoint endpoint )
+    public ISessionOperationResult Handle( IOpenSessionOperationCommand op, PocoDirectory pocos )
     {
-        if( cmd.WeakActorName != "Operator" )
+        switch( op.Payload )
         {
-            return cmd.CreateResult( r => { r.Success = false; r.UserMessages.Add( UserMessage.Error( NormalizedCultureInfo.CodeDefault, "Unknown weak actor.", "Test.UnknownWeakActor" ) ); } );
+            case IBasicLoginCommand basic:
+                // "critical-1s": a Critical session that ends one second later.
+                if( basic.UserName == "Albert" && basic.Password == "critical-1s" )
+                {
+                    return Issue( op, pocos, basic.UserName, op.RememberMe, critical: true, criticalLifetime: TimeSpan.FromSeconds( 1 ) );
+                }
+                if( basic.UserName != "Albert" || basic.Password != "success" )
+                {
+                    return Refuse( op, pocos, "Invalid credentials.", "Test.InvalidCredentials" );
+                }
+                return Issue( op, pocos, basic.UserName, op.RememberMe );
+            case IWeakLoginCommand weak:
+                if( weak.WeakActorName != "Operator" )
+                {
+                    return Refuse( op, pocos, "Unknown weak actor.", "Test.UnknownWeakActor" );
+                }
+                return Issue( op, pocos, weak.WeakActorName, rememberMe: false, weak: true );
+            default:
+                return Refuse( op, pocos, "Unknown scheme.", "Test.UnknownScheme" );
         }
-        return Issue( endpoint, cmd, cmd.WeakActorName, rememberMe: false, weak: true );
     }
 
-    // The refresh and the logout are executed by the endpoint (CK.Cris.Authentication): these are the operations that the
-    // authentication center handles for them.
     [CommandHandler]
     public ISessionOperationResult Handle( IRefreshSessionOperationCommand op, PocoDirectory pocos )
     {
@@ -97,22 +112,7 @@ public sealed class FakeLoginHandlers : ISingletonAutoService
                 r.Result = pocos.Create<ISessionResult>( s => s.Success = false );
             } );
         }
-        var utcNow = DateTime.UtcNow;
-        var info = AuthenticationInfo.Create( new ActorInfo( 3712, "Albert", CK.Core.AuthLevel.Normal, [new SchemeInfo( "Basic", utcNow )] ), utcNow.AddHours( 1 ), null, "D", utcNow );
-        var token = "token-" + Guid.NewGuid().ToString( "N" );
-        FakeTokenReader.Tokens[token] = new AuthenticationTokenData( info, op.NextBindingSecretHash );
-        return op.CreateResult( r =>
-        {
-            r.IssuedSessionKey = "3712.the-session";
-            r.RememberMe = true;
-            r.RefreshExpires = utcNow.AddHours( 1 );
-            r.Result = pocos.Create<ISessionResult>( s =>
-            {
-                s.Info.InitializeFrom( info );
-                s.Token = token;
-                s.RememberMe = true;
-            } );
-        } );
+        return Issue( op, pocos, "Albert", rememberMe: true );
     }
 
     [CommandHandler]
@@ -128,23 +128,24 @@ public sealed class FakeLoginHandlers : ISingletonAutoService
 
     // The passkey ceremonies: the browser's part is mocked by the spec, these fakes check what it sends.
     [CommandHandler]
-    public string Handle( IStartPasskeyLoginCommand cmd ) => """{"challenge":"login-challenge","rpId":"localhost","allowCredentials":[],"userVerification":"required"}""";
+    public string Handle( IStartPasskeyLoginOperationCommand op ) => """{"challenge":"login-challenge","rpId":"localhost","allowCredentials":[],"userVerification":"required"}""";
 
     [CommandHandler]
-    public ISessionResult Handle( IPasskeyLoginCommand cmd, IAuthenticationSessionEndpoint endpoint )
+    public ISessionOperationResult Handle( IFinishPasskeyLoginOperationCommand op, PocoDirectory pocos )
     {
-        if( !cmd.Response.Contains( "\"signed\":\"login-challenge\"" ) )
+        var login = op.Login!;
+        if( !login.Response.Contains( "\"signed\":\"login-challenge\"" ) )
         {
-            return cmd.CreateResult( r => { r.Success = false; r.UserMessages.Add( UserMessage.Error( NormalizedCultureInfo.CodeDefault, "The passkey cannot be verified.", "Authentication.PasskeyVerificationFailed" ) ); } );
+            return Refuse( op, pocos, "The passkey cannot be verified.", "Authentication.PasskeyVerificationFailed" );
         }
-        return Issue( endpoint, cmd, "Albert", cmd.RememberMe, critical: true );
+        return Issue( op, pocos, "Albert", login.RememberMe, critical: true );
     }
 
     [CommandHandler]
-    public string Handle( IStartPasskeyRegistrationCommand cmd ) => """{"challenge":"registration-challenge","rp":{"id":"localhost","name":"Test"},"user":{"id":"dXNlcg","name":"Albert","displayName":"Albert"},"pubKeyCredParams":[{"type":"public-key","alg":-7}]}""";
+    public string Handle( IStartPasskeyRegistrationOperationCommand op ) => """{"challenge":"registration-challenge","rp":{"id":"localhost","name":"Test"},"user":{"id":"dXNlcg","name":"Albert","displayName":"Albert"},"pubKeyCredParams":[{"type":"public-key","alg":-7}]}""";
 
     [CommandHandler]
-    public IPasskeyRegistrationResult Handle( IPasskeyRegistrationCommand cmd ) => cmd.CreateResult( r => r.Name = "Test passkey" );
+    public IPasskeyRegistrationResult Handle( IFinishPasskeyRegistrationOperationCommand op ) => op.CreateResult( r => r.Name = "Test passkey" );
 }
 
 public class E2ETests
@@ -167,7 +168,7 @@ public class E2ETests
                                               typeof( IAuthenticationTokenReader ),
                                               typeof( FakeTokenReader ),
                                               typeof( IAuthenticationSessionEndpoint ),
-                                              typeof( FakeLoginHandlers ),
+                                              typeof( FakeAuthCenterOperations ),
                                               typeof( IBasicLoginCommand ),
                                               typeof( IWeakLoginCommand ),
                                               typeof( IStartPasskeyLoginCommand ),
@@ -177,6 +178,11 @@ public class E2ETests
                                               typeof( IPasskeyRegistrationResult ),
                                               typeof( ILogoutSessionCommand ),
                                               typeof( IRefreshSessionCommand ),
+                                              typeof( IOpenSessionOperationCommand ),
+                                              typeof( IStartPasskeyLoginOperationCommand ),
+                                              typeof( IFinishPasskeyLoginOperationCommand ),
+                                              typeof( IStartPasskeyRegistrationOperationCommand ),
+                                              typeof( IFinishPasskeyRegistrationOperationCommand ),
                                               typeof( IRefreshSessionOperationCommand ),
                                               typeof( ILogoutSessionOperationCommand ),
                                               typeof( ISessionOperationResult ),
