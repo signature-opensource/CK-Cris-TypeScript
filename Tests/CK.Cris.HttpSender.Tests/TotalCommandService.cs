@@ -16,10 +16,10 @@ public sealed class TotalCommandService : ISingletonAutoService
     }
 
     [CommandHandler]
-    public ITotalResult Handle( CurrentCultureInfo culture, IAuthenticationInfo authInfo, ITotalCommand cmd )
+    public ITotalResult Handle( CurrentCultureInfo culture, AuthenticationInfo authInfo, ITotalCommand cmd )
     {
         var messages = new UserMessageCollector( culture );
-        using( messages.OpenInfo( $"Handling TotalCommand for user '{authInfo.User.UserName}' in culture '{culture.CurrentCulture.Name}'." ) )
+        using( messages.OpenInfo( $"Handling TotalCommand for user '{authInfo.Actor.ActorName}' in culture '{culture.CurrentCulture.Name}'." ) )
         {
             if( cmd.Action == "Bug!" ) throw culture.MCException( "You asked to Bug!" );
             else if( cmd.Action == "Error!" ) messages.Error( "You asked for an Error!" );
@@ -28,7 +28,7 @@ public sealed class TotalCommandService : ISingletonAutoService
             return cmd.CreateResult( r =>
             {
                 r.SetUserMessages( messages );
-                r.ActorId = authInfo.User.UserId;
+                r.ActorId = authInfo.Actor.ActorId;
                 r.CultureName = culture.CurrentCulture.Name;
             } );
         }

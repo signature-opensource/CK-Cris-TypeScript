@@ -1,13 +1,10 @@
 using CK.AppIdentity;
-using CK.AspNet.Auth;
-using CK.AspNet.Auth.Cris;
 using CK.Auth;
 using CK.Core;
-using CK.Cris.AmbientValues;
-using CK.Cris.AspNet;
+using CK.IO.Authentication;
+using CK.IO.Authentication.Basic;
 using CK.Testing;
 using Shouldly;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -57,9 +54,9 @@ public sealed class FullCommandService : ISingletonAutoService
     }
 
     [CommandHandler]
-    public void Handle( IFullCommand c, IAuthenticationInfo auth, CurrentCultureInfo culture )
+    public void Handle( IFullCommand c, AuthenticationInfo auth, CurrentCultureInfo culture )
     {
-        AddMessage( $"{c.Prefix}-{auth.User.UserName}-{auth.ActualUser.UserName}-{auth.DeviceId.Length}-{culture.CurrentCulture.Name}-{GetDeltaMS()}" );
+        AddMessage( $"{c.Prefix}-{auth.Actor.ActorName}-{auth.ActualActor.ActorName}-{auth.DeviceId}-{culture.CurrentCulture.Name}-{GetDeltaMS()}" );
     }
 
     [LocalEventHandler]
@@ -84,39 +81,21 @@ public class DelayedCommandTests
         // We need the fr culture for this test.
         NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr" );
 
-        var serverEngineConfiguration = TestHelper.CreateDefaultEngineConfiguration();
-        serverEngineConfiguration.FirstBinPath.Types.Add( typeof( IAuthenticationInfo ),
-                                                          typeof( CrisAuthenticationService ),
-                                                          typeof( AmbientValuesService ),
-                                                          typeof( StdAuthenticationTypeSystem ),
-                                                          typeof( AuthenticationInfoTokenService ),
-                                                          typeof( IDelayedCommand ),
-                                                          typeof( CrisDelayedCommandService ),
-                                                          typeof( CrisAspNetService ),
-                                                          typeof( IDelayedCommandExecutedEvent ),
-                                                          typeof( IFullCommand ),
-                                                          typeof( FullCommandService ),
-                                                          typeof( IBasicLoginCommand ),
-                                                          typeof( ILogoutCommand ),
-                                                          typeof( IRefreshAuthenticationCommand ),
-                                                          typeof( IAuthenticationResult ),
-                                                          typeof( IPocoAuthenticationInfo ),
-                                                          typeof( IPocoUserInfo ),
-                                                          typeof( CrisWebFrontAuthCommandHandler ) );
-        var serverMap = (await serverEngineConfiguration.RunSuccessfullyAsync()).LoadMap();
-        var serverBuilder = WebApplication.CreateSlimBuilder();
-        await using var runningServer = await serverBuilder.CreateRunningAspNetAuthenticationServerAsync( serverMap, configureApplication: app => app.UseMiddleware<CrisMiddleware>() );
-
+        await using var runningServer = await LocalHelper.CreateRunningServerAsync( nameof( simple_delayed_command_Async ),
+                                                                                    [typeof( IDelayedCommand ), typeof( IFullCommand )],
+                                                                                    typeof( CrisDelayedCommandService ),
+                                                                                    typeof( IDelayedCommandExecutedEvent ),
+                                                                                    typeof( FullCommandService ) );
         var serverAddress = runningServer.ServerAddress;
         var callerConf = TestHelper.CreateDefaultEngineConfiguration();
         callerConf.FirstBinPath.Types.Add( typeof( IDelayedCommand ),
                                            typeof( IFullCommand ),
                                            typeof( IBasicLoginCommand ),
-                                           typeof( ILogoutCommand ),
-                                           typeof( IRefreshAuthenticationCommand ),
-                                           typeof( IAuthenticationResult ),
-                                           typeof( IPocoAuthenticationInfo ),
-                                           typeof( IPocoUserInfo ),
+                                           typeof( ILogoutSessionCommand ),
+                                           typeof( IRefreshSessionCommand ),
+                                           typeof( ISessionResult ),
+                                           typeof( IAuthenticationInfoPoco ),
+                                           typeof( IActorInfoPoco ),
                                            typeof( CrisDirectory ),
                                            typeof( CommonPocoJsonSupport ),
                                            typeof( ApplicationIdentityService ),
@@ -139,19 +118,19 @@ public class DelayedCommandTests
             c.Password = "success";
         } );
         var loginAlbert = await sender.SendAndGetResultOrThrowAsync( TestHelper.Monitor, loginCommand, cancellationToken: cancellation );
-        loginAlbert.Info.User.UserName.ShouldBe( "Albert" );
+        loginAlbert.Info.UnsafeActor.ActorName.ShouldBe( "Albert" );
 
         // IFullCommand requires Normal authentication. 
-        // Using Albert (2) and the device identifier.
+        // Using Albert and the device identifier.
         var fullCommand = callerPoco.Create<IFullCommand>();
         fullCommand.Prefix = "n°1";
-        fullCommand.ActorId = loginAlbert.Info.User.UserId;
-        fullCommand.ActualActorId = loginAlbert.Info.ActualUser.UserId;
+        fullCommand.ActorId = loginAlbert.Info.UnsafeActor.ActorId;
+        fullCommand.ActualActorId = loginAlbert.Info.UnsafeActualActor.ActorId;
         fullCommand.DeviceId = loginAlbert.Info.DeviceId;
 
         // Baseline: Albert (null current culture name): this is executed in the Global DI context.
         await sender.SendOrThrowAsync( TestHelper.Monitor, fullCommand, cancellationToken: cancellation );
-        FullCommandService.MessageAt( 0 ).ShouldMatch( "n°1-Albert-Albert-22-en-.*" );
+        FullCommandService.MessageAt( 0 ).ShouldMatch( "n°1-Albert-Albert-the-albert-device-id-en-.*" );
 
         // Delayed command now.
         var delayed = callerPoco.Create<IDelayedCommand>();
@@ -164,7 +143,7 @@ public class DelayedCommandTests
         {
             await Task.Delay( 50, cancellation );
         }
-        FullCommandService.MessageAt( 0 ).ShouldMatch( "n°1-Albert-Albert-22-en-.*" );
+        FullCommandService.MessageAt( 0 ).ShouldMatch( "n°1-Albert-Albert-the-albert-device-id-en-.*" );
         FullCommandService.MessageAt( 1 ).ShouldBe( "EVENT: n°1" );
 
         delayed.ExecutionDate = DateTime.UtcNow.AddMilliseconds( 150 );
@@ -178,7 +157,7 @@ public class DelayedCommandTests
         error.Errors[0].Text.ShouldStartWith( "Invalid device identifier: " );
 
         // Logout.
-        await sender.SendOrThrowAsync( TestHelper.Monitor, callerPoco.Create<ILogoutCommand>(), cancellationToken: cancellation );
+        await sender.SendOrThrowAsync( TestHelper.Monitor, callerPoco.Create<ILogoutSessionCommand>(), cancellationToken: cancellation );
 
         // No more allowed.
         delayed.ExecutionDate = DateTime.UtcNow.AddMilliseconds( 150 );
