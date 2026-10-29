@@ -30,7 +30,9 @@ The remote login errors are notified (a closed popup is not an error).
 ## CK.Ng.Cris.AspNet.Authentication.Basic
 
 The Basic login form (user name, password, remember me), injected in the `Login` component. It sends the
-`IBasicLoginCommand` through the `HttpCrisEndpoint`: the `AuthService` follows it like any session command.
+`IBasicLoginCommand` through the `HttpCrisEndpoint`: the `AuthService` follows it like any session command. The package
+brings the command handler (CK.Cris.Authentication.Basic): it preserves its reference to it
+(`[assembly: PreserveAssemblyReference]`), so that the engine finds it.
 
 ## CK.Ng.Cris.AspNet.Authentication.Weak
 
@@ -39,4 +41,5 @@ sends the `IWeakLoginCommand` through the `HttpCrisEndpoint`. A weak actor is at
 authenticated** (`actor` stays the anonymous, `authenticationInfo.unsafeActor` is the weak actor), so the `PrivatePage`
 refuses it and the `Login` component does not redirect it. On success, the form navigates to its `redirectTo` input
 (`/` by default): with CK.Ng.PublicPage, `/` is the public page when the private one refuses the actor. The application
-routes there what a weak actor may do (its commands are the `ICommandAuthUnsafe` ones).
+routes there what a weak actor may do (its commands are the `ICommandAuthUnsafe` ones). Like the Basic package, it
+brings its command handler (CK.Cris.Authentication.Weak).

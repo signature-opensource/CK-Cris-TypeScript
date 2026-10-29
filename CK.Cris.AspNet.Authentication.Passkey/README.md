@@ -4,7 +4,8 @@ The passkey (WebAuthn) logins of the HTTP front, on the TypeScript side: the fra
 [`PasskeyService`](Res/PasskeyService.ts), over the generated `HttpCrisEndpoint`. The authentication center runs the
 protocol and verifies (CK.AppIdentity.Cris.AuthCenter.Passkey); this package runs the browser's part. The
 [`AuthService`](../CK.Cris.AspNet.Authentication/README.md) has no passkey member: this package exists only when passkeys
-are wanted.
+are wanted. It brings the command handlers of the passkey session commands (CK.Cris.Authentication.Passkey): it
+preserves its reference to them (`[assembly: PreserveAssemblyReference]`), so that the engine finds them.
 
 ```ts
 const passkeys = new PasskeyService( endpoint );
