@@ -1,7 +1,5 @@
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
-using CK.AspNet.Auth;
-using CK.Auth;
 using CK.Core;
 using CK.Poco.Exc.Json;
 using CK.Testing;
@@ -80,16 +78,14 @@ public class ExposureAndInlineTests
                                               typeof( IBlockingCommand ),
                                               typeof( Handlers ),
                                               typeof( CrisCultureService ),
-                                              typeof( CrisAspNetService ),
-                                              typeof( AuthenticationInfoTokenService ),
-                                              typeof( StdAuthenticationTypeSystem ) );
+                                              typeof( CrisAspNetService ) );
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( TestHelper.GetTypeScriptInlineTargetProjectPath(),
                                                                         typeof( IPublicCommand ),
                                                                         typeof( ICultureCommand ) );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
         var builder = WebApplication.CreateSlimBuilder();
         builder.AppendApplicationBuilder( app => app.UseMiddleware<CrisMiddleware>() );
-        await using var runningServer = await builder.CreateRunningAspNetAuthenticationServerAsync( map );
+        await using var runningServer = await builder.CreateRunningAspNetServerAsync( map );
         var pocos = runningServer.Services.GetRequiredService<PocoDirectory>();
 
         async Task<string> PostAsync( string path, IPoco command, PocoJsonExportOptions options )
@@ -130,9 +126,7 @@ public class ExposureAndInlineTests
         configuration.FirstBinPath.Types.Add( typeof( IPublicCommand ),
                                               typeof( IInternalCommand ),
                                               typeof( Handlers ),
-                                              typeof( CrisAspNetService ),
-                                              typeof( AuthenticationInfoTokenService ),
-                                              typeof( StdAuthenticationTypeSystem ) );
+                                              typeof( CrisAspNetService ) );
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( TestHelper.GetTypeScriptInlineTargetProjectPath(),
                                                                         typeof( IPublicCommand ),
                                                                         typeof( IInternalCommand ) );

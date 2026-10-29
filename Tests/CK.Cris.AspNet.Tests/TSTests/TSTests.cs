@@ -1,5 +1,3 @@
-using CK.AspNet.Auth;
-using CK.Auth;
 using CK.Core;
 using CK.Testing;
 using Microsoft.AspNetCore.Builder;
@@ -150,9 +148,7 @@ public class TSTests
                                               typeof( IBuggyCommand ),
                                               typeof( IWithMessageCommand ),
                                               typeof( IWithUserMessageCommand ),
-                                              typeof( CrisAspNetService ),
-                                              typeof( AuthenticationInfoTokenService ),
-                                              typeof( StdAuthenticationTypeSystem ) );
+                                              typeof( CrisAspNetService ) );
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( ICommand<> ), // Useless but harmless.
                                                                                            typeof( IBeautifulCommand ),
                                                                                            typeof( IBuggyCommand ),
@@ -160,7 +156,7 @@ public class TSTests
                                                                                            typeof( IWithUserMessageCommand ) );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
         var builder = WebApplication.CreateSlimBuilder();
-        await using var runningServer = await builder.CreateRunningAspNetAuthenticationServerAsync( map, configureApplication: app => app.UseMiddleware<CrisMiddleware>() );
+        await using var runningServer = await builder.CreateRunningAspNetServerAsync( map, app => app.UseMiddleware<CrisMiddleware>() );
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath, runningServer.ServerAddress, new Dictionary<string, string> { { "CRIS_ENDPOINT_URL", runningServer.ServerAddress + "/.cris" } } );
         // When running in Debug, this will wait until resume is set to true.

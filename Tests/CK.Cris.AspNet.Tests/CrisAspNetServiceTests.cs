@@ -52,8 +52,6 @@ namespace Other
 
 namespace CK.Cris.AspNet.Tests
 {
-    using CK.AspNet.Auth;
-    using CK.Auth;
     using CK.Core;
     using CK.Testing;
     using Shouldly;
@@ -74,14 +72,12 @@ namespace CK.Cris.AspNet.Tests
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ITestCommand ),
                                                   typeof( TestHandler ),
-                                                  typeof( CrisAspNetService ),
-                                                  typeof( AuthenticationInfoTokenService ),
-                                                  typeof( StdAuthenticationTypeSystem ) );
+                                                  typeof( CrisAspNetService ) );
 
             var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
             var builder = WebApplication.CreateSlimBuilder();
             builder.AppendApplicationBuilder( app => app.UseMiddleware<CrisMiddleware>() );
-            await using var runningServer = await builder.CreateRunningAspNetAuthenticationServerAsync( map );
+            await using var runningServer = await builder.CreateRunningAspNetServerAsync( map );
             var client = runningServer.Client;
             var pocoDirectory = runningServer.Services.GetRequiredService<PocoDirectory>();
 
@@ -115,14 +111,12 @@ namespace CK.Cris.AspNet.Tests
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ITestCommand ),
                                                   typeof( BuggyValidator ),
-                                                  typeof( CrisAspNetService ),
-                                                  typeof( AuthenticationInfoTokenService ),
-                                                  typeof( StdAuthenticationTypeSystem ) );
+                                                  typeof( CrisAspNetService ) );
 
             var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
             var builder = WebApplication.CreateSlimBuilder();
             builder.AppendApplicationBuilder( app => app.UseMiddleware<CrisMiddleware>() );
-            await using var runningServer = await builder.CreateRunningAspNetAuthenticationServerAsync( map );
+            await using var runningServer = await builder.CreateRunningAspNetServerAsync( map );
             var client = runningServer.Client;
             var pocoDirectory = runningServer.Services.GetRequiredService<PocoDirectory>();
 
@@ -147,14 +141,12 @@ namespace CK.Cris.AspNet.Tests
             configuration.FirstBinPath.Types.Add( typeof( ITestCommand ),
                                                   typeof( BuggyValidator ),
                                                   typeof( TestHandler ),
-                                                  typeof( CrisAspNetService ),
-                                                  typeof( AuthenticationInfoTokenService ),
-                                                  typeof( StdAuthenticationTypeSystem ) );
+                                                  typeof( CrisAspNetService ) );
 
             var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
             var builder = WebApplication.CreateSlimBuilder();
             builder.AppendApplicationBuilder( app => app.UseMiddleware<CrisMiddleware>() );
-            await using var runningServer = await builder.CreateRunningAspNetAuthenticationServerAsync( map );
+            await using var runningServer = await builder.CreateRunningAspNetServerAsync( map );
             var client = runningServer.Client;
             var pocoDirectory = runningServer.Services.GetRequiredService<PocoDirectory>();
 
@@ -178,14 +170,12 @@ namespace CK.Cris.AspNet.Tests
         public async Task bad_request_are_validation_error_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( CrisAspNetService ),
-                                                  typeof( AuthenticationInfoTokenService ),
-                                                  typeof( StdAuthenticationTypeSystem ) );
+            configuration.FirstBinPath.Types.Add( typeof( CrisAspNetService ) );
 
             var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
             var builder = WebApplication.CreateSlimBuilder();
             builder.AppendApplicationBuilder( app => app.UseMiddleware<CrisMiddleware>() );
-            await using var runningServer = await builder.CreateRunningAspNetAuthenticationServerAsync( map );
+            await using var runningServer = await builder.CreateRunningAspNetServerAsync( map );
             var client = runningServer.Client;
             var pocoDirectory = runningServer.Services.GetRequiredService<PocoDirectory>();
             // SimpleErrorResult.LogKey is null for really empty input.

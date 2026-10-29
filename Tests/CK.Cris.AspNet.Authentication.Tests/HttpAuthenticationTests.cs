@@ -48,6 +48,23 @@ public sealed class WhoAmIHandler : ISingletonAutoService
     public string Handle( IWhoAmIQCommand c, AuthenticationInfo info ) => info.UnsafeActor.IsAnonymous ? "Anonymous" : info.UnsafeActor.ActorName;
 }
 
+/// <summary>
+/// An unsafe command: the <see cref="CrisAuthenticationService"/> checks that its <see cref="IAuthUnsafePart.ActorId"/>
+/// is the one of the current authentication, otherwise the command is not validated.
+/// </summary>
+public interface IUnsafeCommand : ICommand, ICommandAuthUnsafe
+{
+    string UserInfo { get; set; }
+}
+
+public sealed class UnsafeHandler : ISingletonAutoService
+{
+    public static string? LastUserInfo;
+
+    [CommandHandler]
+    public void Execute( IUnsafeCommand cmd ) => LastUserInfo = cmd.UserInfo;
+}
+
 public sealed class NoActor : IActorInfoProvider
 {
     public ValueTask<ActorInfo?> GetActorInfoAsync( IActivityMonitor monitor, int actorId ) => ValueTask.FromResult<ActorInfo?>( null );
@@ -200,6 +217,8 @@ public class HttpAuthenticationTests
                                               typeof( WhoAmIHandler ),
                                               typeof( IWhoAmIQCommand ),
                                               typeof( IWhoCallsQCommand ),
+                                              typeof( IUnsafeCommand ),
+                                              typeof( UnsafeHandler ),
                                               typeof( IWeakLoginCommand ),
                                               typeof( ILogoutSessionCommand ),
                                               typeof( IRefreshSessionCommand ),
@@ -217,7 +236,7 @@ public class HttpAuthenticationTests
                                               typeof( IAuthAmbientValues ),
                                               typeof( ICultureAmbientValues ) );
         if( withOldStack ) configuration.FirstBinPath.Types.Add( typeof( CK.AspNet.Auth.AuthenticationInfoTokenService ), typeof( StdAuthenticationTypeSystem ) );
-        configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( target, typeof( IWhoAmIQCommand ), typeof( IWhoCallsQCommand ), typeof( IWeakLoginCommand ), typeof( ILogoutSessionCommand ) );
+        configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( target, typeof( IWhoAmIQCommand ), typeof( IWhoCallsQCommand ), typeof( IUnsafeCommand ), typeof( IWeakLoginCommand ), typeof( ILogoutSessionCommand ) );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
         var builder = WebApplication.CreateSlimBuilder();
         builder.Services.AddCrisAuthentication();
@@ -258,6 +277,17 @@ public class HttpAuthenticationTests
     static async Task<ICrisCallResult> PostAsync( RunningAspNetServer server, string path, IPoco command )
         => await ReadResultAsync( server, await server.Client.PostJsonAsync( path + "?UsePascalCase", ToJson( server, command ) ) );
 
+    // A refused call: its result is an ICrisResultError whose user messages are in the simplified format of the
+    // TypeScript set, that the Json import cannot read back: the response is checked as text.
+    static async Task<string> PostRefusedAsync( RunningAspNetServer server, string path, IPoco command )
+    {
+        var r = await server.Client.PostJsonAsync( path + "?UsePascalCase", ToJson( server, command ) );
+        r.StatusCode.ShouldBe( HttpStatusCode.OK );
+        var text = await r.Content.ReadAsStringAsync();
+        text.ShouldContain( "CrisResultError" );
+        return text;
+    }
+
     [Test]
     public async Task login_sets_the_cookies_and_the_bearer_needs_the_binding_cookie_Async()
     {
@@ -293,6 +323,36 @@ public class HttpAuthenticationTests
         // Logout clears the cookies: the token is useless.
         (await PostAsync( server, "/.cris/auth", Create<ILogoutSessionCommand>( server ) )).Result.ShouldBeNull();
         (await PostAsync( server, "/.cris", Create<IWhoAmIQCommand>( server ) )).Result.ShouldBe( "Anonymous" );
+    }
+
+    [Test]
+    public async Task ICommandAuthUnsafe_cannot_be_fooled_on_its_ActorId_Async()
+    {
+        await using var server = await StartAsync();
+        var client = server.Client;
+        UnsafeHandler.LastUserInfo = null;
+
+        // Anonymous: the anonymous ActorId is accepted, a missing or another one is refused.
+        (await PostAsync( server, "/.cris", Create<IUnsafeCommand>( server, c => { c.UserInfo = "Anonymous."; c.ActorId = 0; } ) )).Result.ShouldBeNull();
+        UnsafeHandler.LastUserInfo.ShouldBe( "Anonymous." );
+        (await PostRefusedAsync( server, "/.cris", Create<IUnsafeCommand>( server, c => c.UserInfo = "NO: no ActorId." ) ))
+            .ShouldContain( "Invalid property: ActorId cannot be null." );
+        (await PostRefusedAsync( server, "/.cris", Create<IUnsafeCommand>( server, c => { c.UserInfo = "NO WAY!"; c.ActorId = 42; } ) ))
+            .ShouldContain( "Invalid actor identifier: the provided identifier" );
+
+        // The Operator (42) is logged in.
+        var r = await client.PostJsonAsync( "/.cris/auth?UsePascalCase", ToJson( server, Create<IWeakLoginCommand>( server, c => c.WeakActorName = "Operator" ) ) );
+        client.Token = ((ISessionResult)(await ReadResultAsync( server, r )).Result.ShouldNotBeNull()).Token;
+        (await PostAsync( server, "/.cris", Create<IUnsafeCommand>( server, c => { c.UserInfo = "Yes! The Operator is logged in."; c.ActorId = 42; } ) )).Result.ShouldBeNull();
+        UnsafeHandler.LastUserInfo.ShouldBe( "Yes! The Operator is logged in." );
+        (await PostRefusedAsync( server, "/.cris", Create<IUnsafeCommand>( server, c => { c.UserInfo = "NO WAY!"; c.ActorId = 7; } ) ))
+            .ShouldContain( "Invalid actor identifier: the provided identifier" );
+
+        // After the logout, the Operator is no more here.
+        (await PostAsync( server, "/.cris/auth", Create<ILogoutSessionCommand>( server ) )).Result.ShouldBeNull();
+        (await PostRefusedAsync( server, "/.cris", Create<IUnsafeCommand>( server, c => { c.UserInfo = "NO! The Operator is no more here."; c.ActorId = 42; } ) ))
+            .ShouldContain( "Invalid actor identifier: the provided identifier" );
+        UnsafeHandler.LastUserInfo.ShouldBe( "Yes! The Operator is logged in." );
     }
 
     [Test]

@@ -1,5 +1,3 @@
-using CK.AspNet.Auth;
-using CK.Auth;
 using CK.Core;
 using CK.Testing;
 using Shouldly;
@@ -67,14 +65,12 @@ public class CommandWithCurrentCultureTests
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( ITestCommand ),
                                               typeof( OneHandler ),
-                                              typeof( CrisAspNetService ),
-                                              typeof( AuthenticationInfoTokenService ),
-                                              typeof( StdAuthenticationTypeSystem ) );
+                                              typeof( CrisAspNetService ) );
 
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
         var builder = WebApplication.CreateSlimBuilder();
         builder.AppendApplicationBuilder( app => app.UseMiddleware<CrisMiddleware>() );
-        await using var runningServer = await builder.CreateRunningAspNetAuthenticationServerAsync( map );
+        await using var runningServer = await builder.CreateRunningAspNetServerAsync( map );
         var client = runningServer.Client;
         var pocoDirectory = runningServer.Services.GetRequiredService<PocoDirectory>();
 
@@ -117,14 +113,12 @@ public class CommandWithCurrentCultureTests
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( ITestCommand ),
                                               typeof( OneHandler ),
-                                              typeof( CrisAspNetService ),
-                                              typeof( AuthenticationInfoTokenService ),
-                                              typeof( StdAuthenticationTypeSystem ) );
+                                              typeof( CrisAspNetService ) );
 
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
         var builder = WebApplication.CreateSlimBuilder();
         builder.AppendApplicationBuilder( app => app.UseMiddleware<CrisMiddleware>() );
-        await using var runningServer = await builder.CreateRunningAspNetAuthenticationServerAsync( map );
+        await using var runningServer = await builder.CreateRunningAspNetServerAsync( map );
         var client = runningServer.Client;
         var pocoDirectory = runningServer.Services.GetRequiredService<PocoDirectory>();
 
