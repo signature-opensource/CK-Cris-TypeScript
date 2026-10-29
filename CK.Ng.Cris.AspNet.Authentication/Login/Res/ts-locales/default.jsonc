@@ -3,6 +3,8 @@
     "Authentication.RemoteLoginCorrelation": "This login has not been started here. Please retry.",
     "Authentication.RemoteLoginExpired": "This login has expired. Please retry.",
     "Authentication.RemoteLoginRefused": "The login has been refused.",
+    "Login.Critical.Header": "Confirm it's you",
+    "Login.Critical.SubTitle": "This action requires a recent login: sign in again.",
     "Login.ExternalProvider.ButtonLabel": "Continue with",
     "Login.HeaderSubTitle": "Sign in to access your account.",
     "Login.RemoteLoginFailed": "The login failed.",

@@ -135,8 +135,13 @@ endpoint:
 On the client, `AuthService.startPopupLogin( scheme )` (from a click: the popup opens before anything else, browsers
 block a later one; only a message of this origin from this popup ends the login) and `startInlineLogin( scheme,
 returnUrl )`; then the session is refreshed (the marker forces it at the load of the return URL: the cached token is
-stale). `refreshSchemesAsync()` reads the schemes (`availableSchemes`, the remote ones are `Oidc.<Suffix>`) and
-`remoteLoginError` is the error of the last remote login.
+stale). `refreshSchemesAsync()` reads the schemes (`availableSchemes`: their `name`, the remote ones are
+`Oidc.<Suffix>`, and their `criticalLifetime`, zero when the scheme cannot elevate an actor to the Critical level) and
+`remoteLoginError` is the error of the last remote login. `criticalSchemes` are the schemes of the actual actor that
+can elevate it: the ones to propose when a Critical level is required (empty when the user cannot reach it).
+
+Both start methods take an optional `critical`: the login is meant to reach the Critical level, the remote provider must
+authenticate the user again (`IStartLoginCommand.Critical`).
 
 Both start methods take an optional `userData` (a `Record` or a `Map`, see `LoginUserData` and `setLoginUserData`): free
 data of the login, an invitation token for instance. The authentication center keeps them until the callback (the browser

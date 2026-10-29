@@ -146,7 +146,9 @@ public sealed class FakeRemoteLogin : ISingletonAutoService
     public static string? LastWebOrigin;
 
     [CommandHandler]
-    public IList<string> Handle( IGetLoginSchemesQCommand cmd ) => ["Oidc.Test", "Weak"];
+    public IList<ILoginSchemeInfo> Handle( IGetLoginSchemesQCommand cmd, PocoDirectory pocos )
+        => [pocos.Create<ILoginSchemeInfo>( s => { s.Name = "Oidc.Test"; s.CriticalLifetime = TimeSpan.FromMinutes( 5 ); } ),
+            pocos.Create<ILoginSchemeInfo>( s => s.Name = "Weak" )];
 
     [CommandHandler]
     public RedirectedUrl Handle( IStartLoginCommand cmd, IAuthenticationSessionEndpoint endpoint )
@@ -155,7 +157,8 @@ public sealed class FakeRemoteLogin : ISingletonAutoService
         LastWebOrigin = endpoint.WebOrigin;
         var state = Guid.NewGuid().ToString( "N" );
         Pending[state] = endpoint.PrepareRemoteLogin();
-        return new RedirectedUrl( "https://idp.example.com/authorize?state=" + state, cmd.InlineMode );
+        // A Critical login asks the provider to authenticate the user again (the state stays the last parameter).
+        return new RedirectedUrl( "https://idp.example.com/authorize?" + (cmd.Critical ? "prompt=login&" : "") + "state=" + state, cmd.InlineMode );
     }
 
     [CommandHandler]
@@ -206,6 +209,7 @@ public class HttpAuthenticationTests
                                               typeof( IRemoteLoginCallbackCommand ),
                                               typeof( FakeRemoteLogin ),
                                               typeof( IGetLoginSchemesQCommand ),
+                                              typeof( ILoginSchemeInfo ),
                                               typeof( ISessionResult ),
                                               typeof( IAuthenticationInfoPoco ),
                                               typeof( IActorInfoPoco ),

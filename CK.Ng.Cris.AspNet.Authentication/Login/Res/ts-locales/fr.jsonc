@@ -3,6 +3,8 @@
     "Authentication.RemoteLoginCorrelation": "Cette connexion n'a pas été démarrée ici. Veuillez réessayer.",
     "Authentication.RemoteLoginExpired": "Cette connexion a expiré. Veuillez réessayer.",
     "Authentication.RemoteLoginRefused": "La connexion a été refusée.",
+    "Login.Critical.Header": "Confirmez votre identité",
+    "Login.Critical.SubTitle": "Cette action nécessite une connexion récente : reconnectez-vous.",
     "Login.ExternalProvider.ButtonLabel": "Continuer avec",
     "Login.HeaderSubTitle": "Connectez-vous pour accéder à la plateforme.",
     "Login.RemoteLoginFailed": "La connexion a échoué.",

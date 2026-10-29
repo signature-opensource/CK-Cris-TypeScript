@@ -2,7 +2,9 @@ create <html> transformer
 begin
     inject """
 
-           <ck-weak-login-form />
+           @if ( canShow( 'Weak' ) ) {
+               <ck-weak-login-form />
+           }
 
            """ into <LoginProviders>;
 end

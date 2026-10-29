@@ -113,8 +113,13 @@ public sealed class FakeLoginHandlers : ISingletonAutoService
     [CommandHandler]
     public ISessionOperationResult Handle( ILogoutSessionOperationCommand op ) => op.CreateResult( r => r.Cleared = true );
 
+    // "Oidc.Microsoft" cannot elevate an actor to the Critical level.
     [CommandHandler]
-    public IList<string> Handle( IGetLoginSchemesQCommand cmd ) => ["Basic", "Oidc.Google", "Oidc.Microsoft", "Passkey"];
+    public IList<ILoginSchemeInfo> Handle( IGetLoginSchemesQCommand cmd, PocoDirectory pocos )
+        => [Scheme( pocos, "Basic", 5 ), Scheme( pocos, "Oidc.Google", 5 ), Scheme( pocos, "Oidc.Microsoft", 0 ), Scheme( pocos, "Passkey", 5 )];
+
+    static ILoginSchemeInfo Scheme( PocoDirectory pocos, string name, int criticalMinutes )
+        => pocos.Create<ILoginSchemeInfo>( s => { s.Name = name; s.CriticalLifetime = TimeSpan.FromMinutes( criticalMinutes ); } );
 
     // The passkey ceremonies: the browser's part is mocked by the spec, these fakes check what it sends.
     [CommandHandler]

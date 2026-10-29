@@ -2,7 +2,9 @@ create <html> transformer
 begin
     inject """
 
-           <ck-basic-login-form />
+           @if ( canShow( 'Basic' ) ) {
+               <ck-basic-login-form />
+           }
 
            """ into <BasicLogin>;
 end

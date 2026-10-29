@@ -9,7 +9,9 @@ are single components (`INgPrivatePageComponent`, `INgUserInfoBoxComponent`), so
 - The `AuthService` on the `HttpCrisEndpoint`. The application starts once it is initialized (its cached token is used
   or the session is refreshed).
 - `NgAuthService`: the authentication state as signals (`authenticationInfo`, `actor`, `actualActor`, `level`,
-  `isImpersonated`).
+  `isImpersonated`), the login schemes (`availableSchemes`, read by `refreshSchemesAsync()`), the schemes of the user
+  that can elevate it to the Critical level (`criticalSchemes`, `canReachCritical`: an application can hide the actions
+  that require the Critical level when the user cannot reach it) and `navigateToCriticalLogin( redirectTo? )`.
 - **No HttpClient interceptor.** The authentication applies to the Cris commands only: the bearer token is accepted
   with the binding cookie, which is sent only to `/.cris`.
 - The components:
@@ -18,6 +20,7 @@ are single components (`INgPrivatePageComponent`, `INgUserInfoBoxComponent`), so
 |---|---|---|
 | `AuthenticationPage` | `/auth` | The authentication layout (logo, back button). |
 | `Login` | `/auth` | The welcome text, the login forms and a button per remote scheme (`Oidc.<Suffix>`, the last used first, a logo from `login-providers/<suffix>.png`; in a popup by default, `remoteLoginInline` for the current window). It redirects once the actor is not the anonymous. |
+| `Login` | `/auth?critical` | For an authenticated user that must reach the Critical level: only its schemes that can elevate it are proposed (`canShow( scheme )`, used by the injected forms), a remote provider must authenticate it again, and it redirects once the level is Critical. |
 | `Logout` | `/auth/logout` | Sends the logout. |
 | `PrivatePage` | `/` | Its routes are guarded: the actor must not be the anonymous (an Unsafe identity is the anonymous). Otherwise, redirection to `/auth?redirectTo=...`. |
 | `UserInfoBox` | | The actor, the actual actor when impersonating, the level and the sign out. |

@@ -163,8 +163,32 @@ it( 'a logout sent while a refresh is in flight wins, whatever the order of the 
 it( 'the login schemes are the ones of the authentication center', async () => {
   const [, auth] = await newTabAsync();
   expect( auth.availableSchemes ).toEqual( [] );
-  expect( Array.from( await auth.refreshSchemesAsync() ) ).toEqual( ["Oidc.Test", "Weak"] );
-  expect( Array.from( auth.availableSchemes ) ).toEqual( ["Oidc.Test", "Weak"] );
+  const schemes = await auth.refreshSchemesAsync();
+  expect( schemes.map( s => s.name ) ).toEqual( ["Oidc.Test", "Weak"] );
+  // The Weak scheme cannot elevate an actor to the Critical level.
+  expect( schemes.map( s => s.criticalLifetime.toMillis() ) ).toEqual( [5 * 60 * 1000, 0] );
+  expect( auth.availableSchemes.map( s => s.name ) ).toEqual( ["Oidc.Test", "Weak"] );
+  // The anonymous cannot reach the Critical level.
+  expect( auth.criticalSchemes ).toEqual( [] );
+});
+
+it( 'a Critical remote login asks the provider to authenticate the user again', async () => {
+  const frame = document.createElement( "iframe" );
+  document.body.appendChild( frame );
+  const popup = frame.contentWindow!;
+  const open = jest.spyOn( window, "open" ).mockReturnValue( popup );
+  try {
+    const [, auth, url] = await newRemoteLoginTabAsync();
+    const login = auth.startPopupLogin( "Oidc.Test", false, undefined, true );
+    while( !url() ) await new Promise( r => setTimeout( r, 10 ) );
+    expect( url() ).toContain( "prompt=login" );
+    window.dispatchEvent( new MessageEvent( "message", { data: { type: "ck-auth-remote-login", success: false, error: "Authentication.RemoteLoginRefused" }, origin: window.location.origin, source: popup } ) );
+    expect( await login ).toBe( false );
+  }
+  finally {
+    open.mockRestore();
+    frame.remove();
+  }
 });
 
 it( 'back from an inline remote login, the session is refreshed (the cached token is stale)', async () => {

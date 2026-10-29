@@ -11,6 +11,7 @@ import { ImpersonateCommand } from '@local/ck-gen/CK/IO/Authentication/Impersona
 import { ClearImpersonationCommand } from '@local/ck-gen/CK/IO/Authentication/ClearImpersonationCommand';
 import { StartLoginCommand } from '@local/ck-gen/CK/IO/Authentication/StartLoginCommand';
 import { GetLoginSchemesQCommand } from '@local/ck-gen/CK/IO/Authentication/GetLoginSchemesQCommand';
+import { LoginSchemeInfo } from '@local/ck-gen/CK/IO/Authentication/LoginSchemeInfo';
 import { RedirectedUrl } from '@local/ck-gen/CK/Cris/RedirectedUrl';
 
 /**
@@ -64,7 +65,7 @@ export class AuthService {
     #onWakeUp: () => void;
     #isInitialized: Promise<void>;
     #closed: boolean;
-    #availableSchemes: ReadonlyArray<string>;
+    #availableSchemes: ReadonlyArray<LoginSchemeInfo>;
     #remoteLoginError: string|undefined;
     // The sending order of the commands: the last sent session command wins.
     #sent: WeakMap<object, number>;
@@ -197,8 +198,21 @@ export class AuthService {
     /** Gets or sets the features of the popup window of a remote login (see window.open). */
     public popupFeatures: string = "popup,width=500,height=650";
 
-    /** Gets the login schemes of the authentication center (see refreshSchemesAsync). */
-    public get availableSchemes(): ReadonlyArray<string> { return this.#availableSchemes; }
+    /**
+     * Gets the login schemes of the authentication center (see refreshSchemesAsync). A scheme whose criticalLifetime is
+     * zero cannot elevate an actor to the Critical level.
+     */
+    public get availableSchemes(): ReadonlyArray<LoginSchemeInfo> { return this.#availableSchemes; }
+
+    /**
+     * Gets the schemes of the actual actor that can elevate it to the Critical level (see availableSchemes): the ones
+     * to propose when a Critical level is required. Empty when the actual actor cannot reach the Critical level (or
+     * is not authenticated, or the schemes have not been read).
+     */
+    public get criticalSchemes(): ReadonlyArray<string> {
+        const elevating = new Set( this.#availableSchemes.filter( s => s.criticalLifetime.toMillis() > 0 ).map( s => s.name ) );
+        return this.actualActor.schemes.map( s => s.scheme ).filter( s => elevating.has( s ) );
+    }
 
     /**
      * Gets the error (a resource name like "Authentication.RemoteLoginRefused") of the last remote login, if it failed.
@@ -209,7 +223,7 @@ export class AuthService {
      * Reads the login schemes of the authentication center: the remote ones are "Oidc.<Suffix>".
      * @returns The available schemes.
      */
-    public async refreshSchemesAsync(): Promise<ReadonlyArray<string>> {
+    public async refreshSchemesAsync(): Promise<ReadonlyArray<LoginSchemeInfo>> {
         const r = await this.#endpoint.sendAsync( new GetLoginSchemesQCommand() );
         if( !(r.result instanceof CrisError) && r.result ) this.#availableSchemes = r.result;
         return this.#availableSchemes;
@@ -223,12 +237,14 @@ export class AuthService {
      * @param rememberMe Whether the session must be remembered.
      * @param userData Optional free data of the login (an invitation token for instance): kept by the authentication center
      *        until the end of the login, they are untrusted and limited (16 entries, 4096 characters).
+     * @param critical True to reach the Critical level: the provider must authenticate the user again.
      * @returns The error if the login cannot start (the browser navigates otherwise).
      */
-    public async startInlineLogin( scheme: string, returnUrl?: string, rememberMe: boolean = false, userData?: LoginUserData ): Promise<CrisError|undefined> {
+    public async startInlineLogin( scheme: string, returnUrl?: string, rememberMe: boolean = false, userData?: LoginUserData, critical: boolean = false ): Promise<CrisError|undefined> {
         const c = new StartLoginCommand();
         c.scheme = scheme;
         c.inlineMode = true;
+        c.critical = critical;
         c.returnUrl = returnUrl ?? (window.location.pathname + window.location.search);
         c.rememberMe = rememberMe;
         setLoginUserData( c.userData, userData );
@@ -245,9 +261,10 @@ export class AuthService {
      * @param scheme The scheme ("Oidc.Google" for instance).
      * @param rememberMe Whether the session must be remembered.
      * @param userData Optional free data of the login (see startInlineLogin).
+     * @param critical True to reach the Critical level: the provider must authenticate the user again.
      * @returns True on success, false otherwise (see remoteLoginError).
      */
-    public async startPopupLogin( scheme: string, rememberMe: boolean = false, userData?: LoginUserData ): Promise<boolean> {
+    public async startPopupLogin( scheme: string, rememberMe: boolean = false, userData?: LoginUserData, critical: boolean = false ): Promise<boolean> {
         const popup = window.open( "", "ck-auth-login", this.popupFeatures );
         if( !popup ) {
             this.#remoteLoginError = "Authentication.PopupBlocked";
@@ -257,6 +274,7 @@ export class AuthService {
         c.scheme = scheme;
         c.inlineMode = false;
         c.rememberMe = rememberMe;
+        c.critical = critical;
         setLoginUserData( c.userData, userData );
         const r = await this.#endpoint.sendAsync( c );
         if( r.result instanceof CrisError || !r.result ) {

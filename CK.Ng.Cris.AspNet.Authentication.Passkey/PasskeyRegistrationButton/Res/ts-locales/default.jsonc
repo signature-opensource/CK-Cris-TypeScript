@@ -2,6 +2,8 @@
     "CK.PasskeyRegistration.Button": "Add a passkey",
     "CK.PasskeyRegistration.Exists": "This device already has a passkey for your account.",
     "CK.PasskeyRegistration.Failure": "The passkey cannot be added. Please try again.",
+    "CK.PasskeyRegistration.LogInAgain": "Log in again",
+    "CK.PasskeyRegistration.NotAvailable": "Your login methods cannot confirm your identity recently enough to add a passkey.",
     "CK.PasskeyRegistration.RecentLoginRequired": "Log in again to add a passkey (passwordless sign in with your device).",
     "CK.PasskeyRegistration.Success": "The passkey '{{name}}' has been added."
 }

@@ -4,6 +4,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Router, ActivatedRoute } from '@angular/router';
 
 import { NgAuthService } from '../NgAuthService';
+import { AuthLevel } from '@local/ck-gen/CK/Core/AuthLevel';
 import { NotificationService, ResponsiveDirective } from '@local/ck-gen';
 
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -39,16 +40,28 @@ export class Login implements OnInit {
     remoteLoginInline: boolean = false;
     // The remote schemes ("Oidc.<Suffix>"): the last used first.
     remoteSchemes = signal<ReadonlyArray<string>>( [] );
+    // "/auth?critical": an authenticated user logs in again to reach the Critical level. Only its schemes that can
+    // elevate it are proposed (see NgAuthService.criticalSchemes) and a remote provider must authenticate it again.
+    readonly critical = signal( this.#route.snapshot.queryParamMap.has( 'critical' ) && this.#authService.actualActor().actorId !== 0 );
     // <PostLocalVariables />
 
     constructor() {
         // A login is a session command sent through the HttpCrisEndpoint: whoever sends it,
-        // the actor changes and the user is redirected.
+        // the actor changes (the level reaches Critical in the critical mode) and the user is redirected.
         effect(() => {
-            if (this.#authService.actor().actorId !== 0) {
+            if (this.critical() ? this.#authService.level() === AuthLevel.Critical : this.#authService.actor().actorId !== 0) {
                 this.#router.navigate([this.redirectionPath]);
             }
         });
+    }
+
+    /**
+     * Gets whether a login method is proposed: all of them, except in the critical mode where only the schemes of the
+     * user that can elevate it are.
+     * @param scheme The scheme ("Basic", "Passkey", "Oidc.Google", etc.).
+     */
+    canShow(scheme: string): boolean {
+        return !this.critical() || this.#authService.criticalSchemes().includes(scheme);
     }
 
     async ngOnInit(): Promise<void> {
@@ -56,25 +69,25 @@ export class Login implements OnInit {
         if (redirect) {
             this.redirectionPath = redirect;
         }
-        if (this.#authService.actor().actorId !== 0) {
+        if (this.critical() ? this.#authService.level() === AuthLevel.Critical : this.#authService.actor().actorId !== 0) {
             this.#router.navigate([this.redirectionPath]);
             return;
-        } else if (this.redirectionPath !== '') {
+        } else if (this.redirectionPath !== '' && !this.critical()) {
             this.#location.replaceState(this.redirectionPath);
         }
         // Back from an inline remote login that failed.
         this.#notifyError(this.#authService.authService.remoteLoginError);
-        const schemes = await this.#authService.authService.refreshSchemesAsync();
-        this.remoteSchemes.set(this.#sortByLastUsed(schemes.filter(s => s.startsWith('Oidc.'))));
+        const schemes = (await this.#authService.refreshSchemesAsync()).map(s => s.name);
+        this.remoteSchemes.set(this.#sortByLastUsed(schemes.filter(s => s.startsWith('Oidc.') && this.canShow(s))));
     }
 
     async loginWithProvider(p: string): Promise<void> {
         const auth = this.#authService.authService;
         if (this.remoteLoginInline) {
-            const error = await auth.startInlineLogin(p, this.redirectionPath || '/');
+            const error = await auth.startInlineLogin(p, this.redirectionPath || '/', false, undefined, this.critical());
             if (error) this.#notifyError(error.message);
         }
-        else if (!await auth.startPopupLogin(p) && auth.remoteLoginError !== 'Authentication.PopupClosed') {
+        else if (!await auth.startPopupLogin(p, false, undefined, this.critical()) && auth.remoteLoginError !== 'Authentication.PopupClosed') {
             this.#notifyError(auth.remoteLoginError);
         }
     }

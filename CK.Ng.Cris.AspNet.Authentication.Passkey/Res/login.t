@@ -2,7 +2,9 @@ create <html> transformer
 begin
     inject """
 
-           <ck-passkey-login-button />
+           @if ( canShow( 'Passkey' ) ) {
+               <ck-passkey-login-button />
+           }
 
            """ into <LoginProviders>;
 end

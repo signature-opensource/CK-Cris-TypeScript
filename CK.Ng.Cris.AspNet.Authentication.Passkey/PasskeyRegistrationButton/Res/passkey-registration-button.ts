@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, OnInit, output, signal } from '@angular/core';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faKey } from '@fortawesome/free-solid-svg-icons';
@@ -18,7 +18,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
   ],
   templateUrl: './passkey-registration-button.html'
 } )
-export class PasskeyRegistrationButton {
+export class PasskeyRegistrationButton implements OnInit {
   // <PreDependencyInjection revert />
   readonly #passkeys = new PasskeyService( inject( HttpCrisEndpoint ) );
   readonly #auth = inject( NgAuthService );
@@ -43,7 +43,21 @@ export class PasskeyRegistrationButton {
   protected canRegister = computed( () => PasskeyService.isSupported
                                           && this.#auth.level() === AuthLevel.Critical
                                           && !this.#auth.isImpersonated() );
+  // Not at the Critical level: a new login with one of the user's schemes that can elevate it is required, when there is one.
+  protected needsCriticalLogin = computed( () => PasskeyService.isSupported
+                                                 && this.#auth.level() !== AuthLevel.Critical
+                                                 && !this.#auth.isImpersonated() );
+  protected canReachCritical = this.#auth.canReachCritical;
   // <PostLocalVariables />
+
+  async ngOnInit(): Promise<void> {
+    // The schemes tell whether the user can reach the Critical level.
+    if( this.#auth.availableSchemes().length === 0 ) await this.#auth.refreshSchemesAsync();
+  }
+
+  logInAgain(): void {
+    void this.#auth.navigateToCriticalLogin();
+  }
 
   async register(): Promise<void> {
     this.busy.set( true );

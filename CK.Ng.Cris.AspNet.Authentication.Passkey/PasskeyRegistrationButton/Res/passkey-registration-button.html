@@ -2,6 +2,11 @@
     <fa-icon class="ck-btn-icon" [icon]="passkeyIcon"></fa-icon>
     <span class="text">{{ 'CK.PasskeyRegistration.Button' | translate }}</span>
 </button>
-@if ( !canRegister() ) {
-    <span class="ck-passkey-registration-hint">{{ 'CK.PasskeyRegistration.RecentLoginRequired' | translate }}</span>
+@if ( needsCriticalLogin() ) {
+    @if ( canReachCritical() ) {
+        <span class="ck-passkey-registration-hint">{{ 'CK.PasskeyRegistration.RecentLoginRequired' | translate }}</span>
+        <a class="ck-passkey-registration-login" (click)="logInAgain()">{{ 'CK.PasskeyRegistration.LogInAgain' | translate }}</a>
+    } @else {
+        <span class="ck-passkey-registration-hint">{{ 'CK.PasskeyRegistration.NotAvailable' | translate }}</span>
+    }
 }

@@ -3,8 +3,13 @@
 </ng-container>
 
 <div class="ck-login-welcome">
-    <span class="header">{{ 'Login.Welcome' | translate }}</span>
-    <span class="sub">{{ 'Login.HeaderSubTitle' | translate }}</span>
+    @if ( critical() ) {
+        <span class="header">{{ 'Login.Critical.Header' | translate }}</span>
+        <span class="sub">{{ 'Login.Critical.SubTitle' | translate }}</span>
+    } @else {
+        <span class="header">{{ 'Login.Welcome' | translate }}</span>
+        <span class="sub">{{ 'Login.HeaderSubTitle' | translate }}</span>
+    }
 </div>
 
 <div class="ck-login-providers">

@@ -41,8 +41,8 @@ export class PasskeyLoginButton implements OnInit {
 
   async ngOnInit(): Promise<void> {
     if( PasskeyService.isSupported ) {
-      const schemes = await this.#auth.authService.refreshSchemesAsync();
-      this.available.set( schemes.includes( 'Passkey' ) );
+      const schemes = await this.#auth.refreshSchemesAsync();
+      this.available.set( schemes.some( s => s.name === 'Passkey' ) );
     }
   }
 

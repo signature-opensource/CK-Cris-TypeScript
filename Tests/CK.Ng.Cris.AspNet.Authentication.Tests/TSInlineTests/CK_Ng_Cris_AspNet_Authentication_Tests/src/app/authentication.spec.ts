@@ -4,7 +4,7 @@ import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
 import { AuthService, AuthLevel, HttpCrisEndpoint, BasicLoginCommand, LogoutSessionCommand } from '@local/ck-gen';
 import { NgAuthService } from '@local/ck-gen/CK/Ng/Cris/AspNet/Authentication/NgAuthService';
 import { Login } from '@local/ck-gen/CK/Ng/Cris/AspNet/Authentication/login/login';
-import { provideRouter, Router } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { BasicLoginForm } from '@local/ck-gen/CK/Ng/Cris/AspNet/Authentication/Basic/basic-login-form/basic-login-form';
 import { WeakLoginForm } from '@local/ck-gen/CK/Ng/Cris/AspNet/Authentication/Weak/weak-login-form/weak-login-form';
 
@@ -111,6 +111,60 @@ describe( 'Login', () => {
     const e = fixture.nativeElement as HTMLElement;
     expect( e.querySelector( "ck-basic-login-form" ) ).not.toBeNull();
     expect( e.querySelector( "ck-weak-login-form" ) ).not.toBeNull();
+  } );
+} );
+
+describe( 'The Critical level', () => {
+  let cris: HttpCrisEndpoint;
+  let auth: AuthService;
+  let ngAuth: NgAuthService;
+  let navigated: Array<unknown>;
+
+  beforeEach( async () => {
+    localStorage.clear();
+    await TestBed.configureTestingModule( {
+      providers: [...CKGenAppModule.Providers,
+                  provideNoopAnimations(),
+                  provideRouter( [] ),
+                  // "/auth?critical"
+                  { provide: ActivatedRoute, useValue: { snapshot: { queryParams: { critical: 'true' }, queryParamMap: convertToParamMap( { critical: 'true' } ) } } }]
+    } ).compileComponents();
+    cris = TestBed.inject( HttpCrisEndpoint );
+    await cris.sendAsync( new LogoutSessionCommand() );
+    auth = TestBed.inject( AuthService );
+    await auth.isInitialized;
+    ngAuth = TestBed.inject( NgAuthService );
+    navigated = [];
+    jest.spyOn( TestBed.inject( Router ), 'navigate' ).mockImplementation( async ( c, e ) => { navigated.push( [c, e?.queryParams] ); return true; } );
+  } );
+
+  afterEach( () => auth.close() );
+
+  it( 'the user can reach it with the schemes it has that can elevate it', async () => {
+    await ngAuth.refreshSchemesAsync();
+    expect( ngAuth.canReachCritical() ).toBe( false );
+    // A Basic login is Normal here (the fake authentication center): "Basic" can elevate Albert.
+    await cris.sendOrThrowAsync( login( "Albert", "success" ) );
+    expect( ngAuth.level() ).toBe( AuthLevel.Normal );
+    expect( ngAuth.criticalSchemes() ).toEqual( ["Basic"] );
+    expect( ngAuth.canReachCritical() ).toBe( true );
+    await ngAuth.navigateToCriticalLogin( "/profile" );
+    expect( navigated ).toEqual( [[['/auth'], { critical: true, redirectTo: "/profile" }]] );
+  } );
+
+  it( 'the login page proposes only these schemes and stays until the Critical level', async () => {
+    await cris.sendOrThrowAsync( login( "Albert", "success" ) );
+    const fixture = TestBed.createComponent( Login );
+    fixture.autoDetectChanges();
+    for( let i = 0; i < 100 && ngAuth.availableSchemes().length === 0; ++i ) await new Promise( r => setTimeout( r, 20 ) );
+    await fixture.whenStable();
+    expect( fixture.componentInstance.critical() ).toBe( true );
+    expect( navigated ).toEqual( [] );
+    const e = fixture.nativeElement as HTMLElement;
+    expect( e.querySelector( "ck-basic-login-form" ) ).not.toBeNull();
+    expect( e.querySelector( "ck-weak-login-form" ) ).toBeNull();
+    // Albert has no remote scheme.
+    expect( fixture.componentInstance.remoteSchemes() ).toEqual( [] );
   } );
 } );
 
