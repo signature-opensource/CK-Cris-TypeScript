@@ -62,7 +62,7 @@ public sealed class FullCommandService : ISingletonAutoService
         AddMessage( $"{c.Prefix}-{auth.User.UserName}-{auth.ActualUser.UserName}-{auth.DeviceId.Length}-{culture.CurrentCulture.Name}-{GetDeltaMS()}" );
     }
 
-    [RoutedEventHandler]
+    [LocalEventHandler]
     public void OnDelayedCommandExecuted( IDelayedCommandExecutedEvent e )
     {
         if( e.Command is IFullCommand c )
