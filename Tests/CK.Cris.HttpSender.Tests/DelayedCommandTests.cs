@@ -75,11 +75,13 @@ public sealed class FullCommandService : ISingletonAutoService
 [TestFixture]
 public class DelayedCommandTests
 {
-    // When this one starts a cold test, it pays the price of loading all the assemblies
-    // and this takes time (especially in Debug).
-    [CancelAfter( 25000 )]
-    [Test]
-    public async Task simple_delayed_command_Async( CancellationToken cancellation )
+    IStObjMap _serverMap = null!;
+    IStObjMap _callerMap = null!;
+
+    // The engine runs load all the assemblies and generate code: this takes time (especially in Debug
+    // and on a loaded machine) and is outside the CancelAfter budget of the test.
+    [OneTimeSetUp]
+    public async Task CreateMapsAsync()
     {
         // We need the fr culture for this test.
         NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr" );
@@ -103,11 +105,8 @@ public class DelayedCommandTests
                                                           typeof( IPocoAuthenticationInfo ),
                                                           typeof( IPocoUserInfo ),
                                                           typeof( CrisWebFrontAuthCommandHandler ) );
-        var serverMap = (await serverEngineConfiguration.RunSuccessfullyAsync()).LoadMap();
-        var serverBuilder = WebApplication.CreateSlimBuilder();
-        await using var runningServer = await serverBuilder.CreateRunningAspNetAuthenticationServerAsync( serverMap, configureApplication: app => app.UseMiddleware<CrisMiddleware>() );
+        _serverMap = (await serverEngineConfiguration.RunSuccessfullyAsync()).LoadMap();
 
-        var serverAddress = runningServer.ServerAddress;
         var callerConf = TestHelper.CreateDefaultEngineConfiguration();
         callerConf.FirstBinPath.Types.Add( typeof( IDelayedCommand ),
                                            typeof( IFullCommand ),
@@ -121,9 +120,18 @@ public class DelayedCommandTests
                                            typeof( CommonPocoJsonSupport ),
                                            typeof( ApplicationIdentityService ),
                                            typeof( CrisHttpSenderFeatureDriver ) );
-        var callerMap = (await callerConf.RunSuccessfullyAsync()).LoadMap();
+        _callerMap = (await callerConf.RunSuccessfullyAsync()).LoadMap();
+    }
 
-        using var runningCaller = await LocalHelper.CreateRunningCallerAsync( callerMap, serverAddress, cancellation );
+    [CancelAfter( 25000 )]
+    [Test]
+    public async Task simple_delayed_command_Async( CancellationToken cancellation )
+    {
+        var serverBuilder = WebApplication.CreateSlimBuilder();
+        await using var runningServer = await serverBuilder.CreateRunningAspNetAuthenticationServerAsync( _serverMap, configureApplication: app => app.UseMiddleware<CrisMiddleware>() );
+
+        var serverAddress = runningServer.ServerAddress;
+        using var runningCaller = await LocalHelper.CreateRunningCallerAsync( _callerMap, serverAddress, cancellation );
 
         var callerPoco = runningCaller.Services.GetRequiredService<PocoDirectory>();
         var sender = runningCaller.Services.GetRequiredService<ApplicationIdentityService>().Remotes
