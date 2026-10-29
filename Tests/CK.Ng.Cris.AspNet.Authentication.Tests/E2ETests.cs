@@ -41,14 +41,14 @@ public sealed class FakeTokenReader : IAuthenticationTokenReader
 public sealed class FakeLoginHandlers : ISingletonAutoService
 {
     // A login gives a Normal session (Critical for a passkey login, like the real authentication center).
-    static ISessionResult Issue( IAuthenticationSessionEndpoint endpoint, ICommand<ISessionResult> command, string name, bool rememberMe, bool weak = false, bool critical = false )
+    static ISessionResult Issue( IAuthenticationSessionEndpoint endpoint, ICommand<ISessionResult> command, string name, bool rememberMe, bool weak = false, bool critical = false, TimeSpan? criticalLifetime = null )
     {
         var utcNow = DateTime.UtcNow;
         var proof = endpoint.Issue( weak ? "42.the-session" : "3712.the-session", rememberMe, utcNow.AddHours( 1 ) );
         var actor = weak
                         ? new ActorInfo( 42, name, CK.Core.AuthLevel.Unsafe, [new SchemeInfo( ActorInfo.WeakScheme, utcNow )] )
                         : new ActorInfo( 3712, name, critical ? CK.Core.AuthLevel.Critical : CK.Core.AuthLevel.Normal, [new SchemeInfo( critical ? "Passkey" : "Basic", utcNow )] );
-        var info = AuthenticationInfo.Create( actor, utcNow.AddHours( 1 ), critical ? utcNow.AddMinutes( 5 ) : null, "D", utcNow );
+        var info = AuthenticationInfo.Create( actor, utcNow.AddHours( 1 ), critical ? utcNow + (criticalLifetime ?? TimeSpan.FromMinutes( 5 )) : null, "D", utcNow );
         var token = "token-" + Guid.NewGuid().ToString( "N" );
         FakeTokenReader.Tokens[token] = new AuthenticationTokenData( info, proof.BindingSecretHash );
         return command.CreateResult( r =>
@@ -62,6 +62,11 @@ public sealed class FakeLoginHandlers : ISingletonAutoService
     [CommandHandler]
     public ISessionResult Handle( IBasicLoginCommand cmd, IAuthenticationSessionEndpoint endpoint )
     {
+        // "critical-1s": a Critical session that ends one second later.
+        if( cmd.UserName == "Albert" && cmd.Password == "critical-1s" )
+        {
+            return Issue( endpoint, cmd, cmd.UserName, cmd.RememberMe, critical: true, criticalLifetime: TimeSpan.FromSeconds( 1 ) );
+        }
         if( cmd.UserName != "Albert" || cmd.Password != "success" )
         {
             return cmd.CreateResult( r => { r.Success = false; r.UserMessages.Add( UserMessage.Error( NormalizedCultureInfo.CodeDefault, "Invalid credentials.", "Test.InvalidCredentials" ) ); } );

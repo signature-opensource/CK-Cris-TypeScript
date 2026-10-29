@@ -152,6 +152,13 @@ describe( 'The Critical level', () => {
     expect( navigated ).toEqual( [[['/auth'], { critical: true, redirectTo: "/profile" }]] );
   } );
 
+  it( 'the level follows the end of the Critical level', async () => {
+    await cris.sendOrThrowAsync( login( "Albert", "critical-1s" ) );
+    expect( ngAuth.level() ).toBe( AuthLevel.Critical );
+    await new Promise( r => setTimeout( r, 1500 ) );
+    expect( ngAuth.level() ).toBe( AuthLevel.Normal );
+  } );
+
   it( 'the login page proposes only these schemes and stays until the Critical level', async () => {
     await cris.sendOrThrowAsync( login( "Albert", "success" ) );
     const fixture = TestBed.createComponent( Login );

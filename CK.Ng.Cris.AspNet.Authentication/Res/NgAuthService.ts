@@ -16,7 +16,9 @@ export class NgAuthService {
      */
     readonly authService: AuthService = inject( AuthService );
 
-    #authenticationInfo: WritableSignal<AuthenticationInfoPoco> = signal( this.authService.authenticationInfo );
+    // Each change of the AuthService is a change, even with the same information: the level depends on the time (the end
+    // of the Critical level).
+    #authenticationInfo: WritableSignal<AuthenticationInfoPoco> = signal( this.authService.authenticationInfo, { equal: () => false } );
 
     /**
      * Gets the authentication information, as it has been received (see actor and actualActor).

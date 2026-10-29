@@ -60,6 +60,8 @@ export class AuthService {
     #hook: HttpCrisEndpointHook;
     #onStorage: ( e: StorageEvent ) => void;
     #refreshTimer: ReturnType<typeof setTimeout>|undefined;
+    // Notifies the subscribers when the Critical level ends (the level drops to Normal without any session change).
+    #criticalTimer: ReturnType<typeof setTimeout>|undefined;
     // The delay of the last retry of a refresh that decided nothing (0: no retry pending).
     #retryDelay: number;
     #onWakeUp: () => void;
@@ -360,6 +362,7 @@ export class AuthService {
         }
         if( typeof document !== "undefined" ) document.removeEventListener( "visibilitychange", this.#onWakeUp );
         this.#clearTimer();
+        this.#clearCriticalTimer();
         this.#subscribers.clear();
     }
 
@@ -444,6 +447,7 @@ export class AuthService {
         this.#rememberMe = rememberMe;
         if( store ) this.#writeStorage();
         this.#scheduleRefresh();
+        this.#scheduleCriticalEnd();
         // The ambient values (the actor identifier...) depend on the authentication: the next commands wait for them.
         this.#endpoint.updateAmbientValuesAsync().catch( () => {} );
         this.#subscribers.forEach( func => func( this ) );
@@ -474,6 +478,28 @@ export class AuthService {
         if( this.#refreshTimer !== undefined ) {
             clearTimeout( this.#refreshTimer );
             this.#refreshTimer = undefined;
+        }
+    }
+
+    // The level is computed from the dates (see #levelOf): at the end of the Critical level, the subscribers are notified
+    // so that the level they read is the new one.
+    #scheduleCriticalEnd(): void {
+        this.#clearCriticalTimer();
+        const end = this.#info.criticalExpires?.toMillis();
+        if( end === undefined || this.#closed ) return;
+        const delay = end - Date.now();
+        // setTimeout delays are 32-bit signed integers: a longer Critical level is not followed.
+        if( delay <= 0 || delay > 0x7FFFFFFF ) return;
+        this.#criticalTimer = setTimeout( () => {
+            this.#criticalTimer = undefined;
+            this.#subscribers.forEach( func => func( this ) );
+        }, delay + 1 );
+    }
+
+    #clearCriticalTimer(): void {
+        if( this.#criticalTimer !== undefined ) {
+            clearTimeout( this.#criticalTimer );
+            this.#criticalTimer = undefined;
         }
     }
 
