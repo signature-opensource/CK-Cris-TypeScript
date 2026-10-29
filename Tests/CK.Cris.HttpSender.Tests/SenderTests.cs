@@ -88,17 +88,17 @@ public class SenderTests
         error.Errors[0].Text.ShouldStartWith( "Invalid actor identifier: " );
 
         // Albert (null current culture name): this is executed in the Global DI context.
-        totalCommand.ActorId = FakeActors.AlbertId;
+        totalCommand.ActorId = 3712;
         var totalResult = await sender.SendAndGetResultOrThrowAsync( TestHelper.Monitor, totalCommand );
         totalResult.Success.ShouldBeTrue();
-        totalResult.ActorId.ShouldBe( FakeActors.AlbertId );
+        totalResult.ActorId.ShouldBe( 3712 );
         totalResult.CultureName.ShouldBe( "en" );
 
         // Albert in French: this is executed in a Background job.
         totalCommand.CurrentCultureName = "fr";
         totalResult = await sender.SendAndGetResultOrThrowAsync( TestHelper.Monitor, totalCommand );
         totalResult.Success.ShouldBeTrue();
-        totalResult.ActorId.ShouldBe( FakeActors.AlbertId, "The authentication info has been transferred." );
+        totalResult.ActorId.ShouldBe( 3712, "The authentication info has been transferred." );
         totalResult.CultureName.ShouldBe( "fr", "The current culture is French." );
 
         // Albert in French sends an invalid action.

@@ -18,7 +18,8 @@
     <PackageReference Include="CK.Cris.Executor.Engine" Version="3.0.0-0.cris-auth.0.ci.61" />
     <PackageReference Include="CK.Cris.HttpSender" Version="3.0.0-0.cris-auth.0.ci.61" />
     <!-- This project tests the session commands (the Basic login) and DelayedCommand. -->
-    <PackageReference Include="CK.IO.Authentication.Basic" Version="3.0.0-0.cris-auth.0.ci.32" />
+    <PackageReference Include="CK.Cris.Authentication.Basic" Version="3.0.0-0.cris-auth.0.ci.62" />
+    <PackageReference Include="CK.Testing.Cris.Authentication" Version="3.0.0-0.cris-auth.0.ci.62" />
     <PackageReference Include="CK.Cris.DelayedCommand" Version="3.0.0-0.cris-auth.0.ci.61" />
   </ItemGroup>
   <ItemGroup>

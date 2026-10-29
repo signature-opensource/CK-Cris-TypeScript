@@ -4,6 +4,7 @@ using CK.Cris;
 using CK.Cris.AspNet;
 using CK.Cris.AspNet.Authentication;
 using CK.IO.Authentication;
+using CK.IO.Authentication.Basic;
 using CK.IO.Authentication.Weak;
 using CK.Poco.Exc.Json;
 using CK.Testing;
@@ -13,7 +14,6 @@ using NUnit.Framework;
 using Shouldly;
 using System;
 using System.Buffers;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -65,134 +65,6 @@ public sealed class UnsafeHandler : ISingletonAutoService
     public void Execute( IUnsafeCommand cmd ) => LastUserInfo = cmd.UserInfo;
 }
 
-public sealed class NoActor : IActorInfoProvider
-{
-    public ValueTask<ActorInfo?> GetActorInfoAsync( IActivityMonitor monitor, int actorId ) => ValueTask.FromResult<ActorInfo?>( null );
-}
-
-/// <summary>
-/// The fake authentication center: the tokens it issued, with the binding hash of their session.
-/// </summary>
-public sealed class FakeTokenReader : IAuthenticationTokenReader
-{
-    public static readonly ConcurrentDictionary<string, AuthenticationTokenData> Tokens = new();
-
-    public ValueTask<AuthenticationTokenData?> ReadTokenAsync( IActivityMonitor monitor, string token )
-        => ValueTask.FromResult( Tokens.TryGetValue( token, out var d ) ? d : null );
-}
-
-public sealed class FakeOpener : IAuthenticationSessionOpener
-{
-    readonly IAuthenticationSessionEndpoint _endpoint;
-
-    public FakeOpener( IAuthenticationSessionEndpoint endpoint ) => _endpoint = endpoint;
-
-    public ValueTask<ISessionResult> OpenSessionAsync<T>( IActivityMonitor monitor,
-                                                          T command,
-                                                          string scheme,
-                                                          object payload,
-                                                          bool rememberMe = false,
-                                                          IReadOnlyDictionary<string, string?>? userData = null )
-        where T : ICommand<ISessionResult>, ICommandAuthenticationSession
-    {
-        var name = ((IWeakLoginCommand)payload).WeakActorName;
-        if( name != "Operator" )
-        {
-            return ValueTask.FromResult( command.CreateResult( r => r.Success = false ) );
-        }
-        return ValueTask.FromResult( IssueOperator( _endpoint, command, rememberMe ) );
-    }
-
-    /// <summary>
-    /// Issues a session (new secrets and a new token) for the "Operator" weak actor.
-    /// </summary>
-    internal static ISessionResult IssueOperator( IAuthenticationSessionEndpoint endpoint, ICommand<ISessionResult> command, bool rememberMe )
-    {
-        var utcNow = DateTime.UtcNow;
-        var proof = endpoint.Issue( "42.the-session", rememberMe, utcNow.AddHours( 1 ) );
-        var actor = new ActorInfo( 42, "Operator", AuthLevel.Unsafe, [new SchemeInfo( ActorInfo.WeakScheme, utcNow )] );
-        var info = AuthenticationInfo.Create( actor, utcNow.AddHours( 1 ), null, "D", utcNow );
-        var token = "token-" + Guid.NewGuid().ToString( "N" );
-        FakeTokenReader.Tokens[token] = new AuthenticationTokenData( info, proof.BindingSecretHash );
-        return command.CreateResult( r =>
-        {
-            r.Info.InitializeFrom( info );
-            r.Token = token;
-            r.RememberMe = rememberMe;
-        } );
-    }
-}
-
-public sealed class FakeWeakProvider : ISingletonAutoService
-{
-    public static int Called;
-
-    [CommandHandler]
-    public ValueTask<ISessionResult> HandleAsync( IActivityMonitor monitor, IWeakLoginCommand cmd, IAuthenticationSessionOpener opener )
-    {
-        ++Called;
-        return opener.OpenSessionAsync( monitor, cmd, ActorInfo.WeakScheme, cmd, rememberMe: true );
-    }
-
-    [CommandHandler]
-    public void Handle( ILogoutSessionCommand cmd, IAuthenticationSessionEndpoint endpoint ) => endpoint.Clear();
-
-    /// <summary>
-    /// The refresh: a session is presented (the cookies) or it fails and the endpoint is cleared, like the AuthCenter does.
-    /// </summary>
-    [CommandHandler]
-    public ISessionResult Handle( IRefreshSessionCommand cmd, IAuthenticationSessionEndpoint endpoint )
-    {
-        if( endpoint.PresentedProof == null )
-        {
-            endpoint.Clear();
-            return cmd.CreateResult( r => r.Success = false );
-        }
-        return FakeOpener.IssueOperator( endpoint, cmd, rememberMe: true );
-    }
-}
-
-/// <summary>
-/// A fake remote login (what the AuthCenter does with an OpenID Connect scheme): the start prepares the correlation of the
-/// endpoint and returns the provider's URL, the callback checks it and opens a session for the "Operator".
-/// </summary>
-public sealed class FakeRemoteLogin : ISingletonAutoService
-{
-    public static readonly ConcurrentDictionary<string, string> Pending = new();
-    public static string? LastCallbackUrl;
-    public static string? LastWebOrigin;
-
-    [CommandHandler]
-    public IList<ILoginSchemeInfo> Handle( IGetLoginSchemesQCommand cmd, PocoDirectory pocos )
-        => [pocos.Create<ILoginSchemeInfo>( s => { s.Name = "Oidc.Test"; s.CriticalLifetime = TimeSpan.FromMinutes( 5 ); } ),
-            pocos.Create<ILoginSchemeInfo>( s => s.Name = "Weak" )];
-
-    [CommandHandler]
-    public RedirectedUrl Handle( IStartLoginCommand cmd, IAuthenticationSessionEndpoint endpoint )
-    {
-        LastCallbackUrl = endpoint.RemoteLoginCallbackUrl;
-        LastWebOrigin = endpoint.WebOrigin;
-        var state = Guid.NewGuid().ToString( "N" );
-        Pending[state] = endpoint.PrepareRemoteLogin();
-        // A Critical login asks the provider to authenticate the user again (the state stays the last parameter).
-        return new RedirectedUrl( "https://idp.example.com/authorize?" + (cmd.Critical ? "prompt=login&" : "") + "state=" + state, cmd.InlineMode );
-    }
-
-    [CommandHandler]
-    public ISessionResult Handle( IRemoteLoginCallbackCommand cmd, IAuthenticationSessionEndpoint endpoint )
-    {
-        if( !Pending.TryRemove( cmd.State, out var hash ) || hash != endpoint.PresentedRemoteLoginHash || cmd.Code != "the-code" )
-        {
-            return cmd.CreateResult( r =>
-            {
-                r.Success = false;
-                r.UserMessages.Add( UserMessage.Error( NormalizedCultureInfo.CodeDefault, "Refused.", "Test.Refused" ) );
-            } );
-        }
-        return FakeOpener.IssueOperator( endpoint, cmd, rememberMe: true );
-    }
-}
-
 [TestFixture]
 public class HttpAuthenticationTests
 {
@@ -207,18 +79,20 @@ public class HttpAuthenticationTests
                                               typeof( CrisAuthenticationService ),
                                               typeof( AuthenticationInfo ),
                                               typeof( AuthenticationInfoDefaultProvider ),
-                                              typeof( NoActor ),
                                               typeof( IAuthenticationTokenReader ),
-                                              typeof( FakeTokenReader ),
                                               typeof( IAuthenticationSessionOpener ),
-                                              typeof( FakeOpener ),
                                               typeof( IAuthenticationSessionEndpoint ),
-                                              typeof( FakeWeakProvider ),
+                                              // The endpoint side: the session command handlers.
+                                              typeof( AuthenticationSessionEndpointService ),
+                                              typeof( AuthenticationSessionHandlers ),
+                                              typeof( BasicLoginHandler ),
+                                              typeof( WeakLoginHandler ),
                                               typeof( WhoAmIHandler ),
                                               typeof( IWhoAmIQCommand ),
                                               typeof( IWhoCallsQCommand ),
                                               typeof( IUnsafeCommand ),
                                               typeof( UnsafeHandler ),
+                                              typeof( IBasicLoginCommand ),
                                               typeof( IWeakLoginCommand ),
                                               typeof( ILogoutSessionCommand ),
                                               typeof( IRefreshSessionCommand ),
@@ -226,7 +100,6 @@ public class HttpAuthenticationTests
                                               typeof( IClearImpersonationCommand ),
                                               typeof( IStartLoginCommand ),
                                               typeof( IRemoteLoginCallbackCommand ),
-                                              typeof( FakeRemoteLogin ),
                                               typeof( IGetLoginSchemesQCommand ),
                                               typeof( ILoginSchemeInfo ),
                                               typeof( ISessionResult ),
@@ -235,8 +108,10 @@ public class HttpAuthenticationTests
                                               typeof( CK.Cris.AmbientValues.AmbientValuesService ),
                                               typeof( IAuthAmbientValues ),
                                               typeof( ICultureAmbientValues ) );
+        // The authentication center side: its actors (FakeActorDatabase), its tokens and the operations.
+        configuration.FirstBinPath.AddFakeAuthCenter();
         if( withOldStack ) configuration.FirstBinPath.Types.Add( typeof( CK.AspNet.Auth.AuthenticationInfoTokenService ), typeof( StdAuthenticationTypeSystem ) );
-        configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( target, typeof( IWhoAmIQCommand ), typeof( IWhoCallsQCommand ), typeof( IUnsafeCommand ), typeof( IWeakLoginCommand ), typeof( ILogoutSessionCommand ) );
+        configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( target, typeof( IWhoAmIQCommand ), typeof( IWhoCallsQCommand ), typeof( IUnsafeCommand ), typeof( IBasicLoginCommand ), typeof( IWeakLoginCommand ), typeof( ILogoutSessionCommand ) );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
         var builder = WebApplication.CreateSlimBuilder();
         builder.Services.AddCrisAuthentication();
@@ -297,7 +172,12 @@ public class HttpAuthenticationTests
         (await PostAsync( server, "/.cris", Create<IWhoAmIQCommand>( server ) )).Result.ShouldBe( "Anonymous" );
 
         // Login on "/.cris/auth".
-        var r = await client.PostJsonAsync( "/.cris/auth?UsePascalCase", ToJson( server, Create<IWeakLoginCommand>( server, c => c.WeakActorName = "Operator" ) ) );
+        var r = await client.PostJsonAsync( "/.cris/auth?UsePascalCase", ToJson( server, Create<IBasicLoginCommand>( server, c =>
+        {
+            c.UserName = "Albert";
+            c.Password = FakeActorDatabase.BasicPassword;
+            c.RememberMe = true;
+        } ) ) );
         var setCookies = r.Headers.GetValues( "Set-Cookie" ).ToList();
         var binding = setCookies.Single( c => c.StartsWith( CrisAuthenticationCookies.BindingCookieName + "=" ) ).ToLowerInvariant();
         binding.ShouldContain( "path=/.cris;" );
@@ -306,11 +186,11 @@ public class HttpAuthenticationTests
         binding.ShouldContain( "expires=", customMessage: "RememberMe: persistent cookies." );
         setCookies.Single( c => c.StartsWith( CrisAuthenticationCookies.RefreshCookieName + "=" ) ).ToLowerInvariant().ShouldContain( "path=/.cris/auth" );
         var login = (ISessionResult)(await ReadResultAsync( server, r )).Result.ShouldNotBeNull();
-        login.Info.UnsafeActor.ActorName.ShouldBe( "Operator" );
+        login.Info.UnsafeActor.ActorName.ShouldBe( "Albert" );
 
         // The bearer token with the binding cookie: authenticated.
         client.Token = login.Token;
-        (await PostAsync( server, "/.cris", Create<IWhoAmIQCommand>( server ) )).Result.ShouldBe( "Operator" );
+        (await PostAsync( server, "/.cris", Create<IWhoAmIQCommand>( server ) )).Result.ShouldBe( "Albert" );
 
         // The same token without the binding cookie (stolen token): anonymous.
         using( var thief = new HttpClient() { BaseAddress = new Uri( server.ServerAddress ) } )
@@ -362,12 +242,12 @@ public class HttpAuthenticationTests
         // The "/.cris" routes write the user messages in their simple format: the response text is checked.
         async Task<string> PostTextAsync( string path, IPoco command )
             => await (await server.Client.PostJsonAsync( path, ToJson( server, command ) )).Content.ReadAsStringAsync();
-        FakeWeakProvider.Called = 0;
+        var center = server.Services.GetRequiredService<FakeAuthCenterOperations>();
         // The route is declared by [CrisRoute<ICommandAuthenticationSession>( "/.cris/auth" )] on the CrisAspNetAuthenticationPackage.
         (await PostTextAsync( "/.cris", Create<IWeakLoginCommand>( server, c => c.WeakActorName = "Operator" ) )).ShouldContain( "must be sent to \\u0027/.cris/auth\\u0027" );
         // The legacy "/.cris/net" accepts only the commands of "/.cris".
         (await PostTextAsync( "/.cris/net", Create<IWeakLoginCommand>( server, c => c.WeakActorName = "Operator" ) )).ShouldContain( "must be sent to \\u0027/.cris/auth\\u0027" );
-        FakeWeakProvider.Called.ShouldBe( 0 );
+        center.LastOpen.ShouldBeNull( "The session command has not been executed." );
         (await PostTextAsync( "/.cris/auth", Create<IWhoAmIQCommand>( server ) )).ShouldContain( "must be sent to \\u0027/.cris\\u0027" );
         // An undeclared route accepts no command.
         (await PostTextAsync( "/.cris/other", Create<IWhoAmIQCommand>( server ) )).ShouldContain( "must be sent to \\u0027/.cris\\u0027" );
@@ -406,8 +286,9 @@ public class HttpAuthenticationTests
         await using var server = await StartAsync();
         var (url, cookie, setCookie) = await StartRemoteLoginAsync( server, inline: false );
         url.IsInline.ShouldBeFalse();
-        FakeRemoteLogin.LastCallbackUrl.ShouldBe( server.ServerAddress.TrimEnd( '/' ) + "/.auth/oidc/callback" );
-        FakeRemoteLogin.LastWebOrigin.ShouldBe( server.ServerAddress.TrimEnd( '/' ), "The origin that the session route requires from the browser." );
+        var center = server.Services.GetRequiredService<FakeAuthCenterOperations>();
+        center.LastStartRemote!.CallbackUrl.ShouldBe( server.ServerAddress.TrimEnd( '/' ) + "/.auth/oidc/callback" );
+        center.LastStartRemote.WebOrigin.ShouldBe( server.ServerAddress.TrimEnd( '/' ), "The origin that the session route requires from the browser." );
         var c = setCookie.ToLowerInvariant();
         c.ShouldContain( "path=/.auth/oidc/callback" );
         c.ShouldContain( "samesite=lax", customMessage: "The provider's redirection back is a cross-site navigation." );
@@ -473,10 +354,9 @@ public class HttpAuthenticationTests
         await using var server = await StartAsync();
         // It is not exchangeable with the clients (not in the "TypeScript" set): it cannot even be read. The middleware also
         // refuses it explicitly (a second barrier).
-        FakeRemoteLogin.Pending["s"] = "a-hash";
-        var r = await server.Client.PostJsonAsync( "/.cris/auth", ToJson( server, Create<IRemoteLoginCallbackCommand>( server, c => { c.State = "s"; c.Code = "the-code"; } ) ) );
+        var r = await server.Client.PostJsonAsync( "/.cris/auth", ToJson( server, Create<IRemoteLoginCallbackCommand>( server, c => { c.State = "s"; c.Code = FakeAuthCenterOperations.RemoteLoginCode; } ) ) );
         (await r.Content.ReadAsStringAsync()).ShouldContain( """{"result":["CrisResultError",{"isValidationError":true""" );
-        FakeRemoteLogin.Pending.ShouldContainKey( "s", "The handler has not been reached." );
+        server.Services.GetRequiredService<FakeAuthCenterOperations>().LastCompleteRemote.ShouldBeNull( "The handler has not been reached." );
         // The callback answers GET only.
         using var http = new HttpClient() { BaseAddress = new Uri( server.ServerAddress ) };
         (await http.PostAsync( CrisAuthenticationCookies.RemoteLoginCallbackPath, new StringContent( "" ) )).StatusCode.ShouldBe( HttpStatusCode.MethodNotAllowed );
@@ -502,6 +382,11 @@ public class HttpAuthenticationTests
     {
         var target = TestHelper.GetTypeScriptInlineTargetProjectPath();
         await using var server = await StartAsync( target: target );
+        // The spec expects these schemes, and the Operator as the actor of a remote login.
+        var center = server.Services.GetRequiredService<FakeAuthCenterOperations>();
+        center.LoginSchemes.Clear();
+        center.LoginSchemes.AddRange( [("Oidc.Test", TimeSpan.FromMinutes( 5 )), ("Weak", TimeSpan.Zero)] );
+        center.RemoteLoginActorId = 42;
         await using var runner = TestHelper.CreateTypeScriptRunner( target,
                                                                     server.ServerAddress,
                                                                     new System.Collections.Generic.Dictionary<string, string> { { "CRIS_ENDPOINT_URL", server.ServerAddress + "/.cris" } } );

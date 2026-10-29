@@ -294,11 +294,12 @@ public abstract partial class CrisAspNetService : ISingletonAutoService
     }
 
     /// <summary>
-    /// Helper that reads optional "UsePascalCase", "Indented", "TypeLess", "UnsafeRelaxedJsonEscaping"
+    /// Helper that reads optional "UsePascalCase", "Indented", "TypeLess", "UnsafeRelaxedJsonEscaping", "FullUserMessages"
     /// and optionally "SkipValidation" keys from request's query to build the options that can be used
     /// to write the json result.
     /// <para>
-    /// This always sets the <see cref="PocoJsonExportOptions.AlwaysExportSimpleUserMessage"/> to true.
+    /// The user messages are written in their <see cref="UserMessageSimplifiedFormat.Simple"/> format, unless the
+    /// "FullUserMessages" key is present: a .NET client (the CK.Cris.HttpSender) reads only the full format.
     /// </para>
     /// <para>
     /// Using the <see cref="System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping"/> is not recommended. 
@@ -323,13 +324,14 @@ public abstract partial class CrisAspNetService : ISingletonAutoService
         bool usePascalCase = request.Query["UsePascalCase"].Count != 0;
         bool indented = request.Query["Indented"].Count != 0;
         bool typeLess = request.Query["TypeLess"].Count != 0;
+        bool fullUserMessages = request.Query["FullUserMessages"].Count != 0;
         if( !skipValidation.HasValue ) skipValidation = request.Query["SkipValidation"].Count != 0;
         var encoder = request.Query["UnsafeRelaxedJsonEscaping"].Count != 0
                         ? System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
                         : System.Text.Encodings.Web.JavaScriptEncoder.Default;
         var o = new PocoJsonExportOptions()
         {
-            UserMessageFormat = UserMessageSimplifiedFormat.Simple,
+            UserMessageFormat = fullUserMessages ? UserMessageSimplifiedFormat.None : UserMessageSimplifiedFormat.Simple,
             TypeFilterName = typeFilterName,
             UseCamelCase = !usePascalCase,
             TypeLess = typeLess,
