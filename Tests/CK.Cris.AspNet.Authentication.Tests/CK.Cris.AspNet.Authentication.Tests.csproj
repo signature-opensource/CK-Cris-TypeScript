@@ -6,9 +6,9 @@
   <ItemGroup>
     <PackageReference Include="CK.Testing.AspNetServer" Version="24.0.0-0.cris-auth.0.ci.6" />
     <PackageReference Include="CK.Testing.TypeScriptEngine" Version="3.0.0-0.cris-auth.0.ci.10" />
-    <PackageReference Include="CK.Cris.Authentication.Basic" Version="3.0.0-0.cris-auth.0.ci.61" />
-    <PackageReference Include="CK.Cris.Authentication.Weak" Version="3.0.0-0.cris-auth.0.ci.61" />
-    <PackageReference Include="CK.Testing.Cris.Authentication" Version="3.0.0-0.cris-auth.0.ci.62" />
+    <PackageReference Include="CK.Cris.Authentication.Basic" Version="3.0.0-0.cris-auth.0.ci.64" />
+    <PackageReference Include="CK.Cris.Authentication.Weak" Version="3.0.0-0.cris-auth.0.ci.64" />
+    <PackageReference Include="CK.Testing.Cris.Authentication" Version="3.0.0-0.cris-auth.0.ci.64" />
     <!-- Only for the "one stack" test: the old WebFrontAuth. -->
     <PackageReference Include="CK.AspNet.Auth" Version="33.0.0-0.cris-auth.0.ci.8" />
     <PackageReference Include="CK.AppIdentity" Version="3.0.0-0.cris-auth.0.ci.9" />
