@@ -140,9 +140,8 @@ stale). `refreshSchemesAsync()` reads the schemes (`availableSchemes`: their `na
 `remoteLoginError` is the error of the last remote login. `criticalSchemes` are the schemes of the actual actor that
 can elevate it: the ones to propose when a Critical level is required (empty when the user cannot reach it).
 
-`startPopupLogin` takes an optional `critical`: the login is meant to reach the Critical level, the remote provider must
-authenticate the user again (`IStartLoginCommand.Critical`). A critical elevation is always a popup: `startInlineLogin`
-has no `critical`, the page keeps its state (a form being filled, the selected tab).
+Both start methods take an optional `critical`: the login is meant to reach the Critical level, the remote provider must
+authenticate the user again (`IStartLoginCommand.Critical`).
 
 **Binding an identity** (`IStartLoginCommand.BindToCurrentActor`): `startPopupBinding( scheme )` and
 `startInlineBinding( scheme, returnUrl )` add the remote identity to the account of the current actor (Critical level,

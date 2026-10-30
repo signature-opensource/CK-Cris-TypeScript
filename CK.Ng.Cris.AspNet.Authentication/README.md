@@ -20,7 +20,7 @@ application that still references a former version of the deprecated CK.Ng.AspNe
 |---|---|---|
 | `AuthenticationPage` | `/auth` | The authentication layout (logo, back button). |
 | `Login` | `/auth` | The welcome text, the login forms and a button per remote scheme (`Oidc.<Suffix>`, the last used first, a logo from `login-providers/<suffix>.png`; in a popup by default, `remoteLoginInline` for the current window). It redirects once the actor is not the anonymous. |
-| `Login` | `/auth?critical` | For an authenticated user that must reach the Critical level: only its schemes that can elevate it are proposed (`canShow( scheme )`, used by the injected forms), a remote provider must authenticate it again (always in a popup, even with `remoteLoginInline`), and it redirects once the level is Critical. |
+| `Login` | `/auth?critical` | For an authenticated user that must reach the Critical level: only its schemes that can elevate it are proposed (`canShow( scheme )`, used by the injected forms), a remote provider must authenticate it again, and it redirects once the level is Critical. |
 | `Logout` | `/auth/logout` | Sends the logout. |
 | `PrivatePage` | `/` | Its routes are guarded: the actor must not be the anonymous (an Unsafe identity is the anonymous). Otherwise, redirection to `/auth?redirectTo=...`. |
 | `UserInfoBox` | | The actor, the actual actor when impersonating, the level and the sign out. |
