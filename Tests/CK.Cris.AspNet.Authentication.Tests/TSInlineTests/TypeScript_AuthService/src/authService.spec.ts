@@ -1,6 +1,6 @@
 import axios from "axios";
 import { HttpCrisEndpoint, AuthService, AuthLevel, ICommand, SessionResult } from "@local/ck-gen";
-import { WeakLoginCommand, WhoAmIQCommand, LogoutSessionCommand, RefreshSessionCommand, StartLoginCommand, RedirectedUrl } from "@local/ck-gen";
+import { WeakLoginCommand, BasicLoginCommand, WhoAmIQCommand, LogoutSessionCommand, RefreshSessionCommand, StartLoginCommand, RedirectedUrl } from "@local/ck-gen";
 
 // Trick from https://stackoverflow.com/a/77047461/190380
 if( process.env["VSCODE_INSPECTOR_OPTIONS"] ) jest.setTimeout(20 * 60 * 1000 ); // 20 minutes
@@ -362,4 +362,69 @@ it( 'a refresh refused by the server ends the session and is not retried', async
   const refreshes = sent.filter( c => c instanceof RefreshSessionCommand ).length;
   await new Promise( r => setTimeout( r, 1500 ) );
   expect( sent.filter( c => c instanceof RefreshSessionCommand ).length ).toBe( refreshes );
+});
+
+it( 'a binding in a popup leaves the session unchanged (it keeps its Critical level)', async () => {
+  const frame = document.createElement( "iframe" );
+  document.body.appendChild( frame );
+  const popup = frame.contentWindow!;
+  const open = jest.spyOn( window, "open" ).mockReturnValue( popup );
+  try {
+    const [ep, auth, url] = await newRemoteLoginTabAsync();
+    await ep.sendOrThrowAsync( new BasicLoginCommand( "Albert", "success" ) );
+    expect( auth.level ).toBe( AuthLevel.Critical );
+    const token = auth.token;
+    const sent: ICommand<unknown>[] = [];
+    ep.addHook( { onExecuted: e => { sent.push( e.command ); } } );
+    const binding = auth.startPopupBinding( "Oidc.Test" );
+    while( !url() ) await new Promise( r => setTimeout( r, 10 ) );
+    const state = url().substring( url().indexOf( "state=" ) + 6 );
+    const callback = await axios.get( "/.auth/oidc/callback?state=" + state + "&code=the-code", { baseURL: window.location.origin, responseType: "text" } );
+    expect( callback.data ).toContain( '"success":true' );
+    expect( callback.data ).toContain( '"bound":true' );
+    window.dispatchEvent( new MessageEvent( "message", { data: { type: "ck-auth-remote-login", success: true, bound: true, error: null }, origin: window.location.origin, source: popup } ) );
+    expect( await binding ).toBe( true );
+    expect( auth.remoteLoginBound ).toBe( true );
+    expect( auth.remoteLoginError ).toBeUndefined();
+    expect( sent.some( c => c instanceof RefreshSessionCommand ) ).toBe( false );
+    expect( auth.token ).toBe( token );
+    expect( auth.level ).toBe( AuthLevel.Critical );
+    expect( await whoAmIAsync( ep ) ).toBe( "Albert" );
+  }
+  finally {
+    open.mockRestore();
+    frame.remove();
+  }
+});
+
+it( 'an anonymous binding is refused at its start', async () => {
+  const frame = document.createElement( "iframe" );
+  document.body.appendChild( frame );
+  const popup = frame.contentWindow!;
+  const open = jest.spyOn( window, "open" ).mockReturnValue( popup );
+  try {
+    const [, auth] = await newRemoteLoginTabAsync();
+    expect( await auth.startPopupBinding( "Oidc.Test" ) ).toBe( false );
+    expect( auth.remoteLoginBound ).toBe( false );
+    expect( auth.remoteLoginError ).toBeDefined();
+  }
+  finally {
+    open.mockRestore();
+    frame.remove();
+  }
+});
+
+it( 'back from an inline binding, the session is not refreshed', async () => {
+  const [ep1, auth1] = await newTabAsync();
+  await ep1.sendOrThrowAsync( new BasicLoginCommand( "Albert", "success" ) );
+  expect( auth1.level ).toBe( AuthLevel.Critical );
+  window.history.pushState( null, "", "/page?ck-auth-login=bound" );
+  const sent: ICommand<unknown>[] = [];
+  const [ep2, auth2] = await newTabAsync( sent );
+  expect( sent.some( c => c instanceof RefreshSessionCommand ) ).toBe( false );
+  expect( window.location.search ).toBe( "" );
+  expect( auth2.remoteLoginBound ).toBe( true );
+  expect( auth2.remoteLoginError ).toBeUndefined();
+  expect( auth2.level ).toBe( AuthLevel.Critical );
+  expect( await whoAmIAsync( ep2 ) ).toBe( "Albert" );
 });

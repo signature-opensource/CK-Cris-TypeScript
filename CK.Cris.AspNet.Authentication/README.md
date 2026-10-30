@@ -127,10 +127,10 @@ endpoint:
    `IRemoteLoginCallbackCommand` (a client never sends it: it is refused on `/.cris/auth`), executes it, and
    deletes the `ck-auth-login` cookie. The session cookies are set here; the response never carries a token.
 3. **End:**
-   - **popup:** a page that posts `{ type: "ck-auth-remote-login", success, error }` to its own origin and closes (CSP with
+   - **popup:** a page that posts `{ type: "ck-auth-remote-login", success, bound, error }` to its own origin and closes (CSP with
      a nonce, `no-store`, `no-referrer`);
    - **inline:** a `303` to the return URL (relative only: anything else becomes `/`) with the `ck-auth-login` marker
-     (`ok` or the resource name of the error).
+     (`ok`, `bound` or the resource name of the error).
 
 On the client, `AuthService.startPopupLogin( scheme )` (from a click: the popup opens before anything else, browsers
 block a later one; only a message of this origin from this popup ends the login) and `startInlineLogin( scheme,
@@ -142,6 +142,12 @@ can elevate it: the ones to propose when a Critical level is required (empty whe
 
 Both start methods take an optional `critical`: the login is meant to reach the Critical level, the remote provider must
 authenticate the user again (`IStartLoginCommand.Critical`).
+
+**Binding an identity** (`IStartLoginCommand.BindToCurrentActor`): `startPopupBinding( scheme )` and
+`startInlineBinding( scheme, returnUrl )` add the remote identity to the account of the current actor (Critical level,
+not impersonated). The callback recognizes a binding by its successful result without a token: it sets no cookie, the
+popup message has `bound: true`, the inline marker is `bound`. The client then keeps its session: no refresh (a refresh
+would lose the Critical level). `remoteLoginBound` is true after a successful binding.
 
 Both start methods take an optional `userData` (a `Record` or a `Map`, see `LoginUserData` and `setLoginUserData`): free
 data of the login, an invitation token for instance. The authentication center keeps them until the callback (the browser

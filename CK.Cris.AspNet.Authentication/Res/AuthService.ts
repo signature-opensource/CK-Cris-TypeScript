@@ -69,6 +69,7 @@ export class AuthService {
     #closed: boolean;
     #availableSchemes: ReadonlyArray<LoginSchemeInfo>;
     #remoteLoginError: string|undefined;
+    #remoteLoginBound: boolean;
     // The sending order of the commands: the last sent session command wins.
     #sent: WeakMap<object, number>;
     #sentCount: number;
@@ -111,6 +112,7 @@ export class AuthService {
         this.#closed = false;
         this.#retryDelay = 0;
         this.#availableSchemes = [];
+        this.#remoteLoginBound = false;
         this.#sent = new WeakMap();
         this.#sentCount = 0;
         this.#lastApplied = 0;
@@ -193,7 +195,7 @@ export class AuthService {
 
     /**
      * The name of the query parameter that the remote login callback adds to the return URL of an inline login:
-     * "ok" or the resource name of the error.
+     * "ok", "bound" (an identity has been bound to the current actor: see startInlineBinding) or the resource name of the error.
      */
     public static readonly remoteLoginMarker = "ck-auth-login";
 
@@ -222,6 +224,12 @@ export class AuthService {
     public get remoteLoginError(): string|undefined { return this.#remoteLoginError; }
 
     /**
+     * Gets whether the last remote login was a binding that succeeded (see startInlineBinding and startPopupBinding):
+     * the identity is bound to the current actor, the session is unchanged.
+     */
+    public get remoteLoginBound(): boolean { return this.#remoteLoginBound; }
+
+    /**
      * Reads the login schemes of the authentication center: the remote ones are "Oidc.<Suffix>".
      * @returns The available schemes.
      */
@@ -245,11 +253,31 @@ export class AuthService {
     public async startInlineLogin( scheme: string, returnUrl?: string, rememberMe: boolean = false, userData?: LoginUserData, critical: boolean = false ): Promise<CrisError|undefined> {
         const c = new StartLoginCommand();
         c.scheme = scheme;
-        c.inlineMode = true;
         c.critical = critical;
-        c.returnUrl = returnUrl ?? (window.location.pathname + window.location.search);
         c.rememberMe = rememberMe;
         setLoginUserData( c.userData, userData );
+        return this.#startInlineAsync( c, returnUrl );
+    }
+
+    /**
+     * Binds the identity of a remote scheme to the current actor, in the current window: the browser navigates to the
+     * provider and comes back to the return URL with the outcome (see remoteLoginBound and remoteLoginError). This
+     * requires the Critical level (not impersonated); the identity must not be bound to another account; no account is
+     * created and the session is unchanged.
+     * @param scheme The scheme ("Oidc.Google" for instance).
+     * @param returnUrl The relative URL to return to. Defaults to the current path.
+     * @returns The error if the binding cannot start (the browser navigates otherwise).
+     */
+    public async startInlineBinding( scheme: string, returnUrl?: string ): Promise<CrisError|undefined> {
+        const c = new StartLoginCommand();
+        c.scheme = scheme;
+        c.bindToCurrentActor = true;
+        return this.#startInlineAsync( c, returnUrl );
+    }
+
+    async #startInlineAsync( c: StartLoginCommand, returnUrl: string|undefined ): Promise<CrisError|undefined> {
+        c.inlineMode = true;
+        c.returnUrl = returnUrl ?? (window.location.pathname + window.location.search);
         const r = await this.#endpoint.sendAsync( c );
         if( r.result instanceof CrisError ) return r.result;
         window.location.assign( (<RedirectedUrl>r.result).url );
@@ -267,17 +295,40 @@ export class AuthService {
      * @returns True on success, false otherwise (see remoteLoginError).
      */
     public async startPopupLogin( scheme: string, rememberMe: boolean = false, userData?: LoginUserData, critical: boolean = false ): Promise<boolean> {
-        const popup = window.open( "", "ck-auth-login", this.popupFeatures );
-        if( !popup ) {
-            this.#remoteLoginError = "Authentication.PopupBlocked";
-            return false;
-        }
+        const popup = this.#openPopup();
+        if( !popup ) return false;
         const c = new StartLoginCommand();
         c.scheme = scheme;
-        c.inlineMode = false;
         c.rememberMe = rememberMe;
         c.critical = critical;
         setLoginUserData( c.userData, userData );
+        return this.#startPopupAsync( popup, c );
+    }
+
+    /**
+     * Binds the identity of a remote scheme to the current actor in a popup window (see startInlineBinding). It must be
+     * called from a user gesture (a click). The session is unchanged: it is not refreshed (it keeps its Critical level).
+     * @param scheme The scheme ("Oidc.Google" for instance).
+     * @returns True on success (remoteLoginBound is true), false otherwise (see remoteLoginError).
+     */
+    public async startPopupBinding( scheme: string ): Promise<boolean> {
+        const popup = this.#openPopup();
+        if( !popup ) return false;
+        const c = new StartLoginCommand();
+        c.scheme = scheme;
+        c.bindToCurrentActor = true;
+        return this.#startPopupAsync( popup, c );
+    }
+
+    #openPopup(): Window|null {
+        this.#remoteLoginBound = false;
+        const popup = window.open( "", "ck-auth-login", this.popupFeatures );
+        if( !popup ) this.#remoteLoginError = "Authentication.PopupBlocked";
+        return popup;
+    }
+
+    async #startPopupAsync( popup: Window, c: StartLoginCommand ): Promise<boolean> {
+        c.inlineMode = false;
         const r = await this.#endpoint.sendAsync( c );
         if( r.result instanceof CrisError || !r.result ) {
             popup.close();
@@ -298,12 +349,14 @@ export class AuthService {
             // Only the callback page of this origin, in this popup, can end the login.
             const onMessage = ( e: MessageEvent ) => {
                 if( e.origin !== window.location.origin || e.source !== popup || e.data?.type !== "ck-auth-remote-login" ) return;
+                this.#remoteLoginBound = e.data.success === true && e.data.bound === true;
                 end( e.data.success === true, e.data.error ?? undefined );
             };
             const timer = setInterval( () => { if( popup.closed ) end( false, "Authentication.PopupClosed" ); }, 500 );
             window.addEventListener( "message", onMessage );
         } );
-        if( success ) await this.#refreshAsync( true );
+        // A binding leaves the session unchanged: a refresh would lose its Critical level.
+        if( success && !this.#remoteLoginBound ) await this.#refreshAsync( true );
         return success;
     }
 
@@ -374,9 +427,13 @@ export class AuthService {
             if( marker !== null ) {
                 url.searchParams.delete( AuthService.remoteLoginMarker );
                 window.history.replaceState( window.history.state, "", url.pathname + url.search + url.hash );
-                this.#remoteLoginError = marker === "ok" ? undefined : marker;
-                await this.#refreshAsync( true );
-                return;
+                this.#remoteLoginBound = marker === "bound";
+                this.#remoteLoginError = marker === "ok" || marker === "bound" ? undefined : marker;
+                // A binding leaves the session unchanged: the cached token is still valid.
+                if( !this.#remoteLoginBound ) {
+                    await this.#refreshAsync( true );
+                    return;
+                }
             }
         }
         const stored = this.#readStorage();

@@ -302,7 +302,7 @@ public class HttpAuthenticationTests
         r.Headers.GetValues( "Referrer-Policy" ).Single().ShouldBe( "no-referrer" );
         r.Headers.CacheControl!.NoStore.ShouldBeTrue();
         var html = await r.Content.ReadAsStringAsync();
-        html.ShouldContain( """{"type":"ck-auth-remote-login","success":true,"error":null}""" );
+        html.ShouldContain( """{"type":"ck-auth-remote-login","success":true,"bound":false,"error":null}""" );
         html.ShouldContain( "window.opener.postMessage(" );
         html.ShouldContain( "window.location.origin" );
         html.ShouldNotContain( "token", Case.Insensitive, "The page never carries a token." );
@@ -332,7 +332,7 @@ public class HttpAuthenticationTests
         // No remote login cookie (another browser): refused.
         var r = await CallbackAsync( server, $"?state={StateOf( url )}&code=the-code", null );
         var html = await r.Content.ReadAsStringAsync();
-        html.ShouldContain( """{"type":"ck-auth-remote-login","success":false,"error":"Test.Refused"}""" );
+        html.ShouldContain( """{"type":"ck-auth-remote-login","success":false,"bound":false,"error":"Test.Refused"}""" );
         r.Headers.TryGetValues( "Set-Cookie", out var setCookies );
         (setCookies ?? []).ShouldNotContain( s => s.StartsWith( CrisAuthenticationCookies.BindingCookieName + "=" ) && !s.Contains( "1970" ) );
     }
@@ -387,6 +387,8 @@ public class HttpAuthenticationTests
         center.LoginSchemes.Clear();
         center.LoginSchemes.AddRange( [("Oidc.Test", TimeSpan.FromMinutes( 5 )), ("Weak", TimeSpan.Zero)] );
         center.RemoteLoginActorId = 42;
+        // A Basic login is Critical: a binding requires it.
+        center.BasicCriticalLifetime = TimeSpan.FromMinutes( 5 );
         await using var runner = TestHelper.CreateTypeScriptRunner( target,
                                                                     server.ServerAddress,
                                                                     new System.Collections.Generic.Dictionary<string, string> { { "CRIS_ENDPOINT_URL", server.ServerAddress + "/.cris" } } );

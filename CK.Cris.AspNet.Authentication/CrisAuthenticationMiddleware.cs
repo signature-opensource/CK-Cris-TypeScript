@@ -195,9 +195,10 @@ public sealed class CrisAuthenticationMiddleware
     public const string RemoteLoginMarker = "ck-auth-login";
 
     // The GET to which the provider redirects the browser. It executes the IRemoteLoginCallbackCommand, deletes the
-    // remote login cookie, and ends the login: a popup page that posts { type, success, error } to its own origin (no token),
-    // or a redirection to the return URL of an inline login, with the marker. The response never carries a token: the client
-    // refreshes its session with the cookies set here.
+    // remote login cookie, and ends the login: a popup page that posts { type, success, bound, error } to its own origin (no
+    // token), or a redirection to the return URL of an inline login, with the marker ("ok", "bound" or the error). The response
+    // never carries a token: the client refreshes its session with the cookies set here. A binding sets no cookie: the client
+    // keeps its session (a refresh would lose its Critical level).
     async Task HandleRemoteLoginCallbackAsync( HttpContext ctx, IActivityMonitor monitor )
     {
         var response = ctx.Response;
@@ -236,22 +237,28 @@ public sealed class CrisAuthenticationMiddleware
             result = null;
         }
         string? error = null;
+        // A binding (IStartLoginCommand.BindToCurrentActor) succeeds without a token: the session is unchanged.
+        bool bound = false;
         if( result is not ISessionResult r || !r.Success )
         {
             // The resource name of the first error (it is not a secret: "Authentication.RemoteLoginCorrelation"...).
             var resName = (result as ISessionResult)?.UserMessages.Where( m => m.Level == UserMessageLevel.Error ).Select( m => m.ResName ).FirstOrDefault();
             error = string.IsNullOrEmpty( resName ) ? "Authentication.RemoteLoginFailed" : resName;
         }
+        else
+        {
+            bound = r.Token == null;
+        }
         if( presented is { Inline: true } p )
         {
             var returnUrl = p.ReturnUrl != null && IsRelativeUrl( p.ReturnUrl ) ? p.ReturnUrl : "/";
-            var target = returnUrl + (returnUrl.Contains( '?' ) ? '&' : '?') + RemoteLoginMarker + "=" + Uri.EscapeDataString( error ?? "ok" );
+            var target = returnUrl + (returnUrl.Contains( '?' ) ? '&' : '?') + RemoteLoginMarker + "=" + Uri.EscapeDataString( error ?? (bound ? "bound" : "ok") );
             response.StatusCode = StatusCodes.Status303SeeOther;
             response.Headers.Location = ctx.Request.PathBase + target;
             return;
         }
         var nonce = Base64Url.EncodeToString( RandomNumberGenerator.GetBytes( 16 ) );
-        var message = JsonSerializer.Serialize( new Dictionary<string, object?> { ["type"] = "ck-auth-remote-login", ["success"] = error == null, ["error"] = error } );
+        var message = JsonSerializer.Serialize( new Dictionary<string, object?> { ["type"] = "ck-auth-remote-login", ["success"] = error == null, ["bound"] = bound, ["error"] = error } );
         response.StatusCode = StatusCodes.Status200OK;
         response.ContentType = "text/html; charset=utf-8";
         response.Headers.ContentSecurityPolicy = $"default-src 'none'; script-src 'nonce-{nonce}'";
