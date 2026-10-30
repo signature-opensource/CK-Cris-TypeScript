@@ -15,12 +15,12 @@
     <PackageReference Include="CK.AppIdentity.Hosting" Version="3.0.0-0.cris-auth.0.ci.9" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Cris.Executor.Engine" Version="3.0.0-0.cris-auth.0.ci.64" />
-    <PackageReference Include="CK.Cris.HttpSender" Version="3.0.0-0.cris-auth.0.ci.64" />
+    <PackageReference Include="CK.Cris.Executor.Engine" Version="3.0.0-0.cris-auth.0.ci.68" />
+    <PackageReference Include="CK.Cris.HttpSender" Version="3.0.0-0.cris-auth.0.ci.68" />
     <!-- This project tests the session commands (the Basic login) and DelayedCommand. -->
-    <PackageReference Include="CK.Cris.Authentication.Basic" Version="3.0.0-0.cris-auth.0.ci.64" />
-    <PackageReference Include="CK.Testing.Cris.Authentication" Version="3.0.0-0.cris-auth.0.ci.64" />
-    <PackageReference Include="CK.Cris.DelayedCommand" Version="3.0.0-0.cris-auth.0.ci.64" />
+    <PackageReference Include="CK.Cris.Authentication.Basic" Version="3.0.0-0.cris-auth.0.ci.68" />
+    <PackageReference Include="CK.Testing.Cris.Authentication" Version="3.0.0-0.cris-auth.0.ci.68" />
+    <PackageReference Include="CK.Cris.DelayedCommand" Version="3.0.0-0.cris-auth.0.ci.68" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CK.Cris.AspNet.Authentication\CK.Cris.AspNet.Authentication.csproj" />
