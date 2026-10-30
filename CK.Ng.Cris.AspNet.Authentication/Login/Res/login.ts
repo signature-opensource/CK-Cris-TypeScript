@@ -36,7 +36,8 @@ export class Login implements OnInit {
     // <PreRedirectionPath revert />
     redirectionPath: string = '';
     // <PostRedirectionPath />
-    // The remote logins happen in a popup by default (the application keeps its state).
+    // The remote logins happen in a popup by default (the application keeps its state). A critical elevation is
+    // always a popup, whatever this is.
     remoteLoginInline: boolean = false;
     // The remote schemes ("Oidc.<Suffix>"): the last used first.
     remoteSchemes = signal<ReadonlyArray<string>>( [] );
@@ -83,8 +84,8 @@ export class Login implements OnInit {
 
     async loginWithProvider(p: string): Promise<void> {
         const auth = this.#authService.authService;
-        if (this.remoteLoginInline) {
-            const error = await auth.startInlineLogin(p, this.redirectionPath || '/', false, undefined, this.critical());
+        if (this.remoteLoginInline && !this.critical()) {
+            const error = await auth.startInlineLogin(p, this.redirectionPath || '/');
             if (error) this.#notifyError(error.message);
         }
         else if (!await auth.startPopupLogin(p, false, undefined, this.critical()) && auth.remoteLoginError !== 'Authentication.PopupClosed') {

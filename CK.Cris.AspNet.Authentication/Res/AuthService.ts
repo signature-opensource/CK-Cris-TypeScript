@@ -247,13 +247,12 @@ export class AuthService {
      * @param rememberMe Whether the session must be remembered.
      * @param userData Optional free data of the login (an invitation token for instance): kept by the authentication center
      *        until the end of the login, they are untrusted and limited (16 entries, 4096 characters).
-     * @param critical True to reach the Critical level: the provider must authenticate the user again.
      * @returns The error if the login cannot start (the browser navigates otherwise).
+     * A critical elevation is always a popup (see startPopupLogin): the page keeps its state.
      */
-    public async startInlineLogin( scheme: string, returnUrl?: string, rememberMe: boolean = false, userData?: LoginUserData, critical: boolean = false ): Promise<CrisError|undefined> {
+    public async startInlineLogin( scheme: string, returnUrl?: string, rememberMe: boolean = false, userData?: LoginUserData ): Promise<CrisError|undefined> {
         const c = new StartLoginCommand();
         c.scheme = scheme;
-        c.critical = critical;
         c.rememberMe = rememberMe;
         setLoginUserData( c.userData, userData );
         return this.#startInlineAsync( c, returnUrl );
@@ -291,7 +290,8 @@ export class AuthService {
      * @param scheme The scheme ("Oidc.Google" for instance).
      * @param rememberMe Whether the session must be remembered.
      * @param userData Optional free data of the login (see startInlineLogin).
-     * @param critical True to reach the Critical level: the provider must authenticate the user again.
+     * @param critical True to reach the Critical level: the provider must authenticate the user again. A critical
+     *        elevation is always a popup (startInlineLogin has no critical): the page keeps its state.
      * @returns True on success, false otherwise (see remoteLoginError).
      */
     public async startPopupLogin( scheme: string, rememberMe: boolean = false, userData?: LoginUserData, critical: boolean = false ): Promise<boolean> {
