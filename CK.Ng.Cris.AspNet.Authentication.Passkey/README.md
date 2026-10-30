@@ -9,7 +9,7 @@ of the [`PasskeyService`](../CK.Cris.AspNet.Authentication.Passkey/README.md).
 - **`ck-passkey-registration-button`** ("Add a passkey") is placed by the application where the user manages their
   account. It is enabled only at the Critical level (a recent login) and when not impersonated; inputs: `passkeyName`
   (optional), output: `registered` (the name of the new passkey). Below the Critical level, it offers to log in again
-  (`NgAuthService.navigateToCriticalLogin`) when the user can reach the Critical level, and says that the user's login
+  in a popup (`NgAuthService.elevateToCritical()`) when the user can reach the Critical level, and says that the user's login
   methods cannot add a passkey otherwise.
 
 Listing, renaming and deleting the passkeys of the user belong to the storage package (its commands), not here.

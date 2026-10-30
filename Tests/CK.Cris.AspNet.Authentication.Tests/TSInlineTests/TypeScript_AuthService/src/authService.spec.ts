@@ -228,6 +228,58 @@ it( 'a blocked popup fails the remote login', async () => {
   }
 });
 
+// The popup window of an elevation: the login page it shows is another "tab" of the tests.
+function fakePopup(): { closed: boolean, location: { href: string }, close(): void } {
+  return { closed: false, location: { href: "" }, close() { this.closed = true; } };
+}
+
+it( 'an elevation in a popup ends when the session reaches the Critical level (the popup is closed)', async () => {
+  const popup = fakePopup();
+  const open = jest.spyOn( window, "open" ).mockReturnValue( popup as unknown as Window );
+  try {
+    const [ep, auth] = await newTabAsync();
+    // The Weak login is Unsafe: the user must log in again.
+    await ep.sendOrThrowAsync( new WeakLoginCommand( "Operator" ) );
+    const elevation = auth.startPopupElevation( "/auth?critical=true&popup=true" );
+    expect( open ).toHaveBeenCalledWith( "", "ck-auth-elevation", auth.popupFeatures );
+    expect( popup.location.href ).toBe( "/auth?critical=true&popup=true" );
+    // The login page of the popup is another tab: its login is shared through the localStorage.
+    const [ep2, auth2] = await newTabAsync();
+    await ep2.sendOrThrowAsync( new BasicLoginCommand( "Albert", "success" ) );
+    expect( auth2.level ).toBe( AuthLevel.Critical );
+    window.dispatchEvent( new StorageEvent( "storage", { key: "ck-auth" } ) );
+    expect( await elevation ).toBe( true );
+    expect( auth.level ).toBe( AuthLevel.Critical );
+    expect( auth.remoteLoginError ).toBeUndefined();
+    expect( popup.closed ).toBe( true );
+  }
+  finally {
+    open.mockRestore();
+  }
+});
+
+it( 'an elevation fails when its popup is closed or blocked, and needs no popup at the Critical level', async () => {
+  const popup = fakePopup();
+  const open = jest.spyOn( window, "open" ).mockReturnValue( popup as unknown as Window );
+  try {
+    const [ep, auth] = await newTabAsync();
+    const elevation = auth.startPopupElevation( "/auth?critical=true&popup=true" );
+    popup.close();
+    expect( await elevation ).toBe( false );
+    expect( auth.remoteLoginError ).toBe( "Authentication.PopupClosed" );
+    open.mockReturnValue( null );
+    expect( await auth.startPopupElevation( "/auth?critical=true&popup=true" ) ).toBe( false );
+    expect( auth.remoteLoginError ).toBe( "Authentication.PopupBlocked" );
+    await ep.sendOrThrowAsync( new BasicLoginCommand( "Albert", "success" ) );
+    open.mockClear();
+    expect( await auth.startPopupElevation( "/auth?critical=true&popup=true" ) ).toBe( true );
+    expect( open ).not.toHaveBeenCalled();
+  }
+  finally {
+    open.mockRestore();
+  }
+});
+
 // A tab that records the provider's URL returned to a StartLoginCommand (assigned to the popup).
 async function newRemoteLoginTabAsync(): Promise<[HttpCrisEndpoint, AuthService, () => string]> {
   const ep = new HttpCrisEndpoint( axios, crisEndpoint );

@@ -1,4 +1,5 @@
 import { computed, inject, Injectable, Signal, signal, WritableSignal } from '@angular/core';
+import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '@local/ck-gen/CK/Cris/AspNet/Authentication/AuthService';
 import { LoginSchemeInfo } from '@local/ck-gen/CK/IO/Authentication/LoginSchemeInfo';
@@ -46,6 +47,7 @@ export class NgAuthService {
     readonly isImpersonated: Signal<boolean> = computed( () => { this.#authenticationInfo(); return this.authService.isImpersonated; } );
 
     readonly #router = inject( Router );
+    readonly #location = inject( Location );
     #availableSchemes: WritableSignal<ReadonlyArray<LoginSchemeInfo>> = signal( [] );
 
     /**
@@ -81,12 +83,24 @@ export class NgAuthService {
     }
 
     /**
-     * Navigates to the login page to reach the Critical level: it proposes only the schemes of the user that can elevate
-     * it (see criticalSchemes) and comes back to the current page.
-     * @param redirectTo The page to come back to. Defaults to the current one.
+     * Elevates the actor to the Critical level with the login page in its critical mode ("/auth?critical"): it proposes
+     * only the schemes of the user that can elevate it (see criticalSchemes).
+     * <p>
+     * By default, the login page is in a popup (see AuthService.startPopupElevation): the current page keeps its state
+     * (a form being filled, the selected tab). It must be called from a user gesture (a click): the popup is opened
+     * before anything else. The inline mode navigates to the login page, that comes back to the current page.
+     * </p>
+     * @param inlineMode True to navigate to the login page in the current window instead of a popup.
+     * @returns The popup: true when the level is Critical, false otherwise (see AuthService.remoteLoginError:
+     *          "Authentication.PopupBlocked" or "Authentication.PopupClosed"). The inline mode: whether the navigation
+     *          has started.
      */
-    async navigateToCriticalLogin( redirectTo?: string ): Promise<boolean> {
-        return this.#router.navigate( ['/auth'], { queryParams: { critical: true, redirectTo: redirectTo ?? this.#router.url } } );
+    async elevateToCritical( inlineMode: boolean = false ): Promise<boolean> {
+        if( inlineMode ) {
+            return this.#router.navigate( ['/auth'], { queryParams: { critical: true, redirectTo: this.#router.url } } );
+        }
+        const url = this.#router.serializeUrl( this.#router.createUrlTree( ['/auth'], { queryParams: { critical: true, popup: true } } ) );
+        return this.authService.startPopupElevation( this.#location.prepareExternalUrl( url ) );
     }
 
     constructor() {

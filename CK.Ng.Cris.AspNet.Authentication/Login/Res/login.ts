@@ -43,6 +43,9 @@ export class Login implements OnInit {
     // "/auth?critical": an authenticated user logs in again to reach the Critical level. Only its schemes that can
     // elevate it are proposed (see NgAuthService.criticalSchemes) and a remote provider must authenticate it again.
     readonly critical = signal( this.#route.snapshot.queryParamMap.has( 'critical' ) && this.#authService.actualActor().actorId !== 0 );
+    // "/auth?critical&popup": the popup of an elevation (see NgAuthService.elevateToCritical). Once the level is Critical,
+    // its opener sees it (the session is shared) and closes it: it doesn't redirect.
+    readonly popup = this.critical() && this.#route.snapshot.queryParamMap.has( 'popup' ) && !!window.opener;
     // <PostLocalVariables />
 
     constructor() {
@@ -50,7 +53,7 @@ export class Login implements OnInit {
         // the actor changes (the level reaches Critical in the critical mode) and the user is redirected.
         effect(() => {
             if (this.critical() ? this.#authService.level() === AuthLevel.Critical : this.#authService.actor().actorId !== 0) {
-                this.#router.navigate([this.redirectionPath]);
+                this.#redirect();
             }
         });
     }
@@ -70,7 +73,7 @@ export class Login implements OnInit {
             this.redirectionPath = redirect;
         }
         if (this.critical() ? this.#authService.level() === AuthLevel.Critical : this.#authService.actor().actorId !== 0) {
-            this.#router.navigate([this.redirectionPath]);
+            this.#redirect();
             return;
         } else if (this.redirectionPath !== '' && !this.critical()) {
             this.#location.replaceState(this.redirectionPath);
@@ -98,6 +101,12 @@ export class Login implements OnInit {
 
     getProviderName(p: string): string {
         return p.startsWith('Oidc.') ? p.substring(5) : p;
+    }
+
+    #redirect(): void {
+        // The popup of an elevation is closed by its opener (it redirects only when its opener is gone).
+        if (this.popup && window.opener && !window.opener.closed) return;
+        this.#router.navigate([this.redirectionPath]);
     }
 
     #notifyError(error: string | undefined): void {

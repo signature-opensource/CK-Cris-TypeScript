@@ -119,15 +119,17 @@ describe( 'The Critical level', () => {
   let auth: AuthService;
   let ngAuth: NgAuthService;
   let navigated: Array<unknown>;
+  // The query parameters of the login page: "/auth?critical" (a test can change them before creating the page).
+  let queryParams: Record<string, string>;
 
   beforeEach( async () => {
     localStorage.clear();
+    queryParams = { critical: 'true' };
     await TestBed.configureTestingModule( {
       providers: [...CKGenAppModule.Providers,
                   provideNoopAnimations(),
                   provideRouter( [] ),
-                  // "/auth?critical"
-                  { provide: ActivatedRoute, useValue: { snapshot: { queryParams: { critical: 'true' }, queryParamMap: convertToParamMap( { critical: 'true' } ) } } }]
+                  { provide: ActivatedRoute, useValue: { get snapshot() { return { queryParams, queryParamMap: convertToParamMap( queryParams ) }; } } }]
     } ).compileComponents();
     cris = TestBed.inject( HttpCrisEndpoint );
     await cris.sendAsync( new LogoutSessionCommand() );
@@ -148,8 +150,14 @@ describe( 'The Critical level', () => {
     expect( ngAuth.level() ).toBe( AuthLevel.Normal );
     expect( ngAuth.criticalSchemes() ).toEqual( ["Basic"] );
     expect( ngAuth.canReachCritical() ).toBe( true );
-    await ngAuth.navigateToCriticalLogin( "/profile" );
-    expect( navigated ).toEqual( [[['/auth'], { critical: true, redirectTo: "/profile" }]] );
+    // By default, the login page is in a popup: the current page keeps its state.
+    const elevation = jest.spyOn( auth, 'startPopupElevation' ).mockResolvedValue( true );
+    expect( await ngAuth.elevateToCritical() ).toBe( true );
+    expect( elevation ).toHaveBeenCalledWith( "/auth?critical=true&popup=true" );
+    expect( navigated ).toEqual( [] );
+    // The inline mode navigates to the login page, that comes back to the current page.
+    await ngAuth.elevateToCritical( true );
+    expect( navigated ).toEqual( [[['/auth'], { critical: true, redirectTo: "/" }]] );
   } );
 
   it( 'the level follows the end of the Critical level', async () => {
@@ -172,6 +180,25 @@ describe( 'The Critical level', () => {
     expect( e.querySelector( "ck-weak-login-form" ) ).toBeNull();
     // Albert has no remote scheme.
     expect( fixture.componentInstance.remoteSchemes() ).toEqual( [] );
+  } );
+
+  it( 'in the popup of an elevation, the login page does not redirect: its opener closes it', async () => {
+    queryParams = { critical: 'true', popup: 'true' };
+    Object.defineProperty( window, 'opener', { value: { closed: false }, configurable: true } );
+    try {
+      await cris.sendOrThrowAsync( login( "Albert", "success" ) );
+      const fixture = TestBed.createComponent( Login );
+      fixture.autoDetectChanges();
+      await fixture.whenStable();
+      expect( fixture.componentInstance.popup ).toBe( true );
+      await cris.sendOrThrowAsync( login( "Albert", "critical-1s" ) );
+      expect( ngAuth.level() ).toBe( AuthLevel.Critical );
+      await fixture.whenStable();
+      expect( navigated ).toEqual( [] );
+    }
+    finally {
+      Object.defineProperty( window, 'opener', { value: null, configurable: true } );
+    }
   } );
 } );
 

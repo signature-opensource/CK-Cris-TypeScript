@@ -11,7 +11,12 @@ application that still references a former version of the deprecated CK.Ng.AspNe
 - `NgAuthService`: the authentication state as signals (`authenticationInfo`, `actor`, `actualActor`, `level`,
   `isImpersonated`), the login schemes (`availableSchemes`, read by `refreshSchemesAsync()`), the schemes of the user
   that can elevate it to the Critical level (`criticalSchemes`, `canReachCritical`: an application can hide the actions
-  that require the Critical level when the user cannot reach it) and `navigateToCriticalLogin( redirectTo? )`.
+  that require the Critical level when the user cannot reach it) and `elevateToCritical( inlineMode? )`: the login
+  page in its critical mode (`/auth?critical`), in a popup by default (`AuthService.startPopupElevation`), so the
+  current page keeps its state; it must be called from a click. The popup's page doesn't redirect: the session is
+  shared (the token is in the localStorage), the opener sees the Critical level and closes it. A remote login in it
+  opens its own popup: the elevation popup stays on the application's origin. `inlineMode` navigates to the login
+  page, which comes back to the current page.
 - **No HttpClient interceptor.** The authentication applies to the Cris commands only: the bearer token is accepted
   with the binding cookie, which is sent only to `/.cris`.
 - The components:

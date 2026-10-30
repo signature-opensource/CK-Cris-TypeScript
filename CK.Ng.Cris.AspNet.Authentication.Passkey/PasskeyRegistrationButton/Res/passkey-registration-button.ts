@@ -55,8 +55,12 @@ export class PasskeyRegistrationButton implements OnInit {
     if( this.#auth.availableSchemes().length === 0 ) await this.#auth.refreshSchemesAsync();
   }
 
-  logInAgain(): void {
-    void this.#auth.navigateToCriticalLogin();
+  // A login in a popup: the page keeps its state (the passkey name being typed).
+  async logInAgain(): Promise<void> {
+    const auth = this.#auth.authService;
+    if( !await this.#auth.elevateToCritical() && auth.remoteLoginError !== 'Authentication.PopupClosed' ) {
+      this.#notifService.displaySimpleMessage( 'error', this.#translateService.instant( auth.remoteLoginError ?? 'Login.RemoteLoginFailed' ) );
+    }
   }
 
   async register(): Promise<void> {

@@ -320,9 +320,44 @@ export class AuthService {
         return this.#startPopupAsync( popup, c );
     }
 
-    #openPopup(): Window|null {
+    /**
+     * Elevates the actor to the Critical level in a popup window that shows a login page of this application in its
+     * critical mode: any scheme of the user that can elevate it can be used (see criticalSchemes), and the current page
+     * keeps its state. It must be called from a user gesture (a click): the popup is opened before anything else.
+     * The popup shares the session (the token is shared through the localStorage): this service sees the new level, and
+     * then closes the popup. The popup stays on this origin (a remote login in it opens its own popup, see
+     * startPopupLogin): a provider that isolates its pages from their opener cannot end the elevation.
+     * @param loginUrl The URL of the login page in its critical mode (the page must not close itself).
+     * @returns True when the level is Critical, false otherwise (see remoteLoginError: "Authentication.PopupBlocked" or
+     *          "Authentication.PopupClosed").
+     */
+    public async startPopupElevation( loginUrl: string ): Promise<boolean> {
+        if( this.level === AuthLevel.Critical ) return true;
+        // Not the window of the remote logins: the login page of the popup can start one.
+        const popup = this.#openPopup( "ck-auth-elevation" );
+        if( !popup ) return false;
+        popup.location.href = loginUrl;
+        const success = await new Promise<boolean>( resolve => {
+            let done = false;
+            const end = ( s: boolean ) => {
+                if( done ) return;
+                done = true;
+                this.removeOnChange( onChange );
+                clearInterval( timer );
+                resolve( s );
+            };
+            const onChange = () => { if( this.level === AuthLevel.Critical ) end( true ); };
+            const timer = setInterval( () => { if( popup.closed ) end( this.level === AuthLevel.Critical ); }, 500 );
+            this.addOnChange( onChange );
+        } );
+        if( !popup.closed ) popup.close();
+        this.#remoteLoginError = success ? undefined : "Authentication.PopupClosed";
+        return success;
+    }
+
+    #openPopup( name: string = "ck-auth-login" ): Window|null {
         this.#remoteLoginBound = false;
-        const popup = window.open( "", "ck-auth-login", this.popupFeatures );
+        const popup = window.open( "", name, this.popupFeatures );
         if( !popup ) this.#remoteLoginError = "Authentication.PopupBlocked";
         return popup;
     }
