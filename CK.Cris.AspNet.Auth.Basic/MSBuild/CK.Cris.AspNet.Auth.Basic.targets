@@ -1,0 +1,6 @@
+<Project>
+  <Target Name="CK_Cris_AspNet_Auth_Basic_IsDeprecated" BeforeTargets="ResolveAssemblyReferences">
+    <Error Code="CKDEPRECATED"
+           Text="Package 'CK.Cris.AspNet.Auth.Basic' is deprecated and must be replaced by 'CK.Cris.Authentication.Basic': see https://github.com/signature-opensource/CK-Cris/blob/stable/CK.Cris.Authentication.Basic/README.md and the migration guide https://github.com/signature-opensource/CK-Stack/blob/main/Docs/Migrations/v2026.282-to-explo-cris-auth.md." />
+  </Target>
+</Project>

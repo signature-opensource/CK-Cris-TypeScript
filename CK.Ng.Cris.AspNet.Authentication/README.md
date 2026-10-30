@@ -1,8 +1,8 @@
 # CK.Ng.Cris.AspNet.Authentication
 
-The Angular front of the new authentication ([CK.Cris.AspNet.Authentication](../CK.Cris.AspNet.Authentication/README.md)).
-It coexists with the old CK.Ng.AspNet.Auth, but an application uses one of them: their private page and user info box
-are single components (`INgPrivatePageComponent`, `INgUserInfoBoxComponent`), so referencing both fails at setup.
+The Angular front of the authentication ([CK.Cris.AspNet.Authentication](../CK.Cris.AspNet.Authentication/README.md)).
+Its private page and user info box are single components (`INgPrivatePageComponent`, `INgUserInfoBoxComponent`): an
+application that still references a former version of the deprecated CK.Ng.AspNet.Auth fails at setup.
 
 ## What it provides
 

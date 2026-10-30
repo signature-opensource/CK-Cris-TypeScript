@@ -1,6 +1,6 @@
 # CK.Cris.AspNet.Authentication
 
-The HTTP side of the CK.AuthenticationInfo model, for the front applications (it replaces CK.AspNet.Auth / WebFrontAuth). The deployment target is
+The HTTP side of the CK.AuthenticationInfo model, for the front applications. The deployment target is
 **same-origin**: the SPA and `/.cris` share the same origin, there is no CORS.
 
 ```csharp
@@ -12,15 +12,15 @@ app.UseCris();
 
 ## One authentication stack per application
 
-This package coexists with the old stack (WebFrontAuth) in the repositories, but an application uses one of them:
+The packages of the former stack (WebFrontAuth: CK.AspNet.Auth and the packages built on it) are deprecated: their
+last versions are tombstones that fail the build. An application that still references a former version of one of
+them is refused:
 
 | Combination | Refused by |
 |---|---|
-| CK.Cris.Auth (old) + CK.Cris.Authentication (new) | the setup: both define `CK.Auth.CrisAuthenticationService` (the generated code doesn't compile). |
+| CK.Cris.Auth + CK.Cris.Authentication | the setup: both define `CK.Auth.CrisAuthenticationService` (the generated code doesn't compile). |
 | CK.AspNet.Auth (WebFrontAuth) + this package | `UseCrisAuthentication()` throws at startup (the `IStObjMap` features contain `CK.AspNet.Auth`). |
 | CK.Ng.AspNet.Auth + CK.Ng.Cris.AspNet.Authentication | the setup: the private page and the user info box are single components. |
-
-The other old packages depend on one of these.
 
 ## Routes
 

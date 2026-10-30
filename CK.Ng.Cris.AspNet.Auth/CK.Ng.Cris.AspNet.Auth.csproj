@@ -1,11 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <!-- Tombstone: no assembly, no dependencies. -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <!-- NU5128: the package has no lib/ folder, on purpose. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <Description>Deprecated: replaced by CK.Ng.Cris.AspNet.Authentication.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Ng.AspNet.Auth" Version="3.0.0-0.cris-auth.0.ci.10" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\CK.Ng.Cris.AspNet\CK.Ng.Cris.AspNet.csproj" />
+    <Content Include="MSBuild/CK.Ng.Cris.AspNet.Auth.targets">
+      <Pack>true</Pack>
+      <PackagePath>buildTransitive\CK.Ng.Cris.AspNet.Auth.targets</PackagePath>
+    </Content>
   </ItemGroup>
 </Project>

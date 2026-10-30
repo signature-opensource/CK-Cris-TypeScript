@@ -70,7 +70,7 @@ public class HttpAuthenticationTests
 {
     internal static Task<RunningAspNetServer> StartServerAsync() => StartAsync();
 
-    static async Task<RunningAspNetServer> StartAsync( string? target = null, bool withOldStack = false, CK.AppIdentity.ApplicationIdentityService? identity = null )
+    static async Task<RunningAspNetServer> StartAsync( string? target = null, CK.AppIdentity.ApplicationIdentityService? identity = null )
     {
         target ??= TestHelper.GetTypeScriptInlineTargetProjectPath( "StartAsync" );
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
@@ -110,7 +110,6 @@ public class HttpAuthenticationTests
                                               typeof( ICultureAmbientValues ) );
         // The authentication center side: its actors (FakeActorDatabase), its tokens and the operations.
         configuration.FirstBinPath.AddFakeAuthCenter();
-        if( withOldStack ) configuration.FirstBinPath.Types.Add( typeof( CK.AspNet.Auth.AuthenticationInfoTokenService ), typeof( StdAuthenticationTypeSystem ) );
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( target, typeof( IWhoAmIQCommand ), typeof( IWhoCallsQCommand ), typeof( IUnsafeCommand ), typeof( IBasicLoginCommand ), typeof( IWeakLoginCommand ), typeof( ILogoutSessionCommand ) );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
         var builder = WebApplication.CreateSlimBuilder();
@@ -360,17 +359,6 @@ public class HttpAuthenticationTests
         // The callback answers GET only.
         using var http = new HttpClient() { BaseAddress = new Uri( server.ServerAddress ) };
         (await http.PostAsync( CrisAuthenticationCookies.RemoteLoginCallbackPath, new StringContent( "" ) )).StatusCode.ShouldBe( HttpStatusCode.MethodNotAllowed );
-    }
-
-    [Test]
-    public async Task the_old_stack_and_the_new_one_cannot_run_together_Async()
-    {
-        // The setup succeeds (CK.AspNet.Auth alone doesn't conflict with the new types): the application refuses to start.
-        var ex = await Should.ThrowAsync<InvalidOperationException>( async () =>
-        {
-            await using var server = await StartAsync( withOldStack: true );
-        } );
-        ex.Message.ShouldContain( "old authentication stack (CK.AspNet.Auth)" );
     }
 
     /// <summary>

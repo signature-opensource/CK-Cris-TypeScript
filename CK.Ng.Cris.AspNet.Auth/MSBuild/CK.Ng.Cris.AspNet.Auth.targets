@@ -1,0 +1,6 @@
+<Project>
+  <Target Name="CK_Ng_Cris_AspNet_Auth_IsDeprecated" BeforeTargets="ResolveAssemblyReferences">
+    <Error Code="CKDEPRECATED"
+           Text="Package 'CK.Ng.Cris.AspNet.Auth' is deprecated and must be replaced by 'CK.Ng.Cris.AspNet.Authentication': see https://github.com/signature-opensource/CK-Cris-TypeScript/blob/stable/CK.Ng.Cris.AspNet.Authentication/README.md and the migration guide https://github.com/signature-opensource/CK-Stack/blob/main/Docs/Migrations/v2026.282-to-explo-cris-auth.md." />
+  </Target>
+</Project>

@@ -14,7 +14,6 @@
     <Project Path="Tests/CK.Cris.AspNet.Authentication.Tests/CK.Cris.AspNet.Authentication.Tests.csproj" />
     <Project Path="Tests/CK.Cris.AspNet.Tests/CK.Cris.AspNet.Tests.csproj" />
     <Project Path="Tests/CK.Cris.HttpSender.Tests/CK.Cris.HttpSender.Tests.csproj" />
-    <Project Path="Tests/CK.Ng.Cris.AspNet.Auth.Tests/CK.Ng.Cris.AspNet.Auth.Tests.csproj" />
     <Project Path="Tests/CK.Ng.Cris.AspNet.Authentication.Tests/CK.Ng.Cris.AspNet.Authentication.Tests.csproj" />
   </Folder>
   <Project Path="CK.Cris.AspNet.Auth.Basic/CK.Cris.AspNet.Auth.Basic.csproj" />
