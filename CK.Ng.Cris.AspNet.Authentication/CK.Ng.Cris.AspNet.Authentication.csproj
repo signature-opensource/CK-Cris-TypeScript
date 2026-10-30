@@ -4,7 +4,7 @@
     <Description>The Angular front of the new authentication (CK.Cris.AspNet.Authentication): the AuthService provider, the NgAuthService signals, the private page guard and the authentication components.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Ng.Zorro" Version="3.0.0-0.cris-auth.0.ci.10" />
+    <PackageReference Include="CK.Ng.Zorro" Version="3.0.0-0.cris-auth.0.ci.11" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Ng.Cris.AspNet\CK.Ng.Cris.AspNet.csproj" />

@@ -24,8 +24,8 @@
         packages.
     -->
   <ItemGroup>
-    <PackageReference Include="CK.Cris" Version="3.0.0-0.cris-auth.0.ci.33" />
-    <PackageReference Include="CK.TypeScript" Version="3.0.0-0.cris-auth.0.ci.10" />
+    <PackageReference Include="CK.Cris" Version="3.0.0-0.cris-auth.0.ci.35" />
+    <PackageReference Include="CK.TypeScript" Version="3.0.0-0.cris-auth.0.ci.11" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="MSBuild/CK.Cris.TypeScript.targets">
