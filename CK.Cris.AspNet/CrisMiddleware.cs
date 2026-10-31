@@ -13,6 +13,11 @@ public class CrisMiddleware
 {
     static readonly PathString _crisPath = new PathString( "/.cris" );
     static readonly PathString _netPath = new PathString( "/net" );
+    static readonly PocoJsonExportOptions _invalidFilterWriteOptions = new PocoJsonExportOptions()
+    {
+        UserMessageFormat = UserMessageSimplifiedFormat.Simple,
+        TypeFilterName = "AllExchangeable"
+    };
     readonly RequestDelegate _next;
     readonly CrisAspNetService _service;
 
@@ -86,6 +91,13 @@ public class CrisMiddleware
                     // There is no option for /.cris/net: using AlwaysExportSimpleUserMessage doesn't make sense.
                     // This uses the "AllExportable" Poco type set.
                     writeOptions = PocoJsonExportOptions.Default;
+                }
+                else if( !typeFilterName.StartsWith( "TypeScript" ) )
+                {
+                    // The request's TypeFilterName is invalid (unknown or not a "TypeScript" one): this is a bad request.
+                    // The result is a validation error (it carries only messages): it is written with the "AllExchangeable" set.
+                    ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    writeOptions = _invalidFilterWriteOptions;
                 }
                 else
                 {

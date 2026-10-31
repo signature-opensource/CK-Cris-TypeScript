@@ -111,7 +111,11 @@ public abstract partial class CrisAspNetService : ISingletonAutoService
     /// is not executed here and the task's result is the command result. It returns null to let the command be executed here.
     /// (The authentication refuses the remote login callback command sent by a client this way.)
     /// </param>
-    /// <returns>The command result and the <see cref="ExchangeableRuntimeFilter.Name"/> to use to send the response.</returns>
+    /// <returns>
+    /// The command result and the <see cref="ExchangeableRuntimeFilter.Name"/> to use to send the response.
+    /// When the request's TypeFilterName is invalid (unknown or not starting with "TypeScript"), this is "AllExchangeable"
+    /// and the result is a validation error: the response should be a 400 Bad Request.
+    /// </returns>
     public async Task<(ICrisCallResult Result, string TypeFilterName)> HandleRequestAsync( IActivityMonitor monitor,
                                                                                            HttpRequest request,
                                                                                            CommandRequestReader reader,
@@ -348,26 +352,24 @@ public abstract partial class CrisAspNetService : ISingletonAutoService
     /// <summary>
     /// Helper that handles optional "TypeFilterName" and "AllowTrailingCommas" query string arguments
     /// to initialize a new <see cref="PocoJsonImportOptions"/>.
-    /// The <see cref="PocoJsonImportOptions.TypeFilterName"/> must start with "TypeScript".
+    /// The <see cref="PocoJsonImportOptions.TypeFilterName"/> must start with "TypeScript" and be an existing
+    /// <see cref="ExchangeableRuntimeFilter"/>: it restricts the types that can be read.
     /// </summary>
     /// <param name="request">The incoming request.</param>
     /// <param name="messageCollector">The user message collector.</param>
     /// <param name="importOptions">The resulting import options.</param>
     /// <returns>True on success, false on error.</returns>
-    static bool TryCreateJsonImportOptions( HttpRequest request,
-                                            UserMessageCollector messageCollector,
-                                            [NotNullWhen( true )] out PocoJsonImportOptions? importOptions )
+    bool TryCreateJsonImportOptions( HttpRequest request,
+                                     UserMessageCollector messageCollector,
+                                     [NotNullWhen( true )] out PocoJsonImportOptions? importOptions )
     {
-        var typeFilterName = (string?)request.Query["TypeFilterName"];
-        if( typeFilterName == null ) typeFilterName = "TypeScript";
-        else
+        var typeFilterName = (string?)request.Query["TypeFilterName"] ?? "TypeScript";
+        if( !typeFilterName.StartsWith( "TypeScript" )
+            || !((IPocoDirectoryExchangeGenerated)_pocoDirectory).RuntimeFilters.Any( f => f.Name == typeFilterName ) )
         {
-            if( !typeFilterName.StartsWith( "TypeScript" ) )
-            {
-                messageCollector.Error( $"Invalid TypeFilterName '{typeFilterName}'.", "Cris.AspNet.InvalidTypeFilterName" );
-                importOptions = null;
-                return false;
-            }
+            messageCollector.Error( $"Invalid TypeFilterName '{typeFilterName}'.", "Cris.AspNet.InvalidTypeFilterName" );
+            importOptions = null;
+            return false;
         }
         bool allowTrailingCommas = request.Query["AllowTrailingCommas"].Count != 0;
         importOptions = new PocoJsonImportOptions()
