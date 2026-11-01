@@ -11,7 +11,7 @@
   <ItemGroup>
     <PackageReference Include="CK.Testing.StObjEngine" Version="36.0.0-0.cris-auth.0.ci.21" />
     <PackageReference Include="CK.Testing.AspNetServer" Version="24.0.0-0.cris-auth.0.ci.14" />
-    <PackageReference Include="CK.Testing.TypeScriptEngine" Version="3.0.0-0.cris-auth.0.ci.31" />
+    <PackageReference Include="CK.Testing.TypeScriptEngine" Version="3.0.0-0.cris-auth.0.ci.32" />
     <PackageReference Include="CK.AppIdentity.Hosting" Version="3.0.0-0.cris-auth.0.ci.17" />
   </ItemGroup>
   <ItemGroup>
