@@ -34,6 +34,8 @@ namespace CK.Cris.AspNet;
 // Commands without ambient services are executed inline by the CrisExecutionContext resolved
 // from the request services.
 [AlsoRegisterType<CrisExecutionContext>]
+// The contribution of the "/.cris" endpoints to the web applications of the host.
+[AlsoRegisterType<CrisAspNetHosting>]
 public abstract partial class CrisAspNetService : ISingletonAutoService
 {
     /// <summary>

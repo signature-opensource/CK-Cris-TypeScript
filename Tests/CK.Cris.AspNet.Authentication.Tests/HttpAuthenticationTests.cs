@@ -1,3 +1,4 @@
+using CK.AspNet;
 using CK.Auth;
 using CK.Core;
 using CK.Cris;
@@ -70,12 +71,13 @@ public class HttpAuthenticationTests
 {
     internal static Task<RunningAspNetServer> StartServerAsync() => StartAsync();
 
-    static async Task<RunningAspNetServer> StartAsync( string? target = null, CK.AppIdentity.ApplicationIdentityService? identity = null )
+    static async Task<RunningAspNetServer> StartAsync( string? target = null, CK.AppIdentity.ApplicationIdentityService? identity = null, bool byContributions = false )
     {
         target ??= TestHelper.GetTypeScriptInlineTargetProjectPath( "StartAsync" );
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CrisAspNetService ),
                                               typeof( CrisAspNetAuthenticationPackage ),
+                                              typeof( CrisAspNetAuthenticationHosting ),
                                               typeof( CrisAuthenticationService ),
                                               typeof( AuthenticationInfo ),
                                               typeof( AuthenticationInfoDefaultProvider ),
@@ -113,13 +115,23 @@ public class HttpAuthenticationTests
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( target, typeof( IWhoAmIQCommand ), typeof( IWhoCallsQCommand ), typeof( IUnsafeCommand ), typeof( IBasicLoginCommand ), typeof( IWeakLoginCommand ), typeof( ILogoutSessionCommand ) );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
         var builder = WebApplication.CreateSlimBuilder();
-        builder.Services.AddCrisAuthentication();
         // The party model, when installed: the identity service and the CurrentLocalParty.
         if( identity != null )
         {
             builder.Services.AddSingleton<CK.AppIdentity.IApplicationIdentityService>( identity );
             builder.Services.AddScoped( _ => new CK.AppIdentity.CurrentLocalParty( identity ) );
         }
+        if( byContributions )
+        {
+            // The packages do the job: their real objects contribute EnableCrisAuthentication and EnableCris, that the
+            // host applies (as the "HttpEndpoint" feature does).
+            builder.Services.AddStObjMap( TestHelper.Monitor, map );
+            WebApplicationContributions.FindOrAdd( builder.Services ).ApplyTo( builder );
+            builder.TryEnable( "CrisAuthentication" ).ShouldBeFalse();
+            builder.TryEnable( "Cris" ).ShouldBeFalse();
+            return await builder.CreateRunningAspNetServerAsync();
+        }
+        builder.Services.AddCrisAuthentication();
         return await builder.CreateRunningAspNetServerAsync( map, app =>
         {
             app.UseCrisAuthentication();
@@ -162,10 +174,11 @@ public class HttpAuthenticationTests
         return text;
     }
 
-    [Test]
-    public async Task login_sets_the_cookies_and_the_bearer_needs_the_binding_cookie_Async()
+    [TestCase( false )]
+    [TestCase( true )]
+    public async Task login_sets_the_cookies_and_the_bearer_needs_the_binding_cookie_Async( bool byContributions )
     {
-        await using var server = await StartAsync();
+        await using var server = await StartAsync( byContributions: byContributions );
         var client = server.Client;
 
         (await PostAsync( server, "/.cris", Create<IWhoAmIQCommand>( server ) )).Result.ShouldBe( "Anonymous" );

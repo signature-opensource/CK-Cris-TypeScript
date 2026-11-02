@@ -10,6 +10,12 @@ app.UseCrisAuthentication();   // Before UseCris().
 app.UseCris();
 ```
 
+Or in one gesture on the builder: `builder.EnableCrisAuthentication()` (the "Enable" convention of CK.AspNet: it is
+idempotent) registers the services, prepends the middleware (it runs before the Cris middleware whatever the order of
+the calls) and enables Cris (`CrisApplicationBuilderExtension.EnableCris`). The real object
+`CrisAspNetAuthenticationHosting` contributes it to the web applications of the host (`WebApplicationContributions`):
+a host that applies the contributions, like the "HttpEndpoint" feature of CK.AppIdentity.HttpEndpoint, calls nothing.
+
 ## One authentication stack per application
 
 The packages of the former stack (WebFrontAuth: CK.AspNet.Auth and the packages built on it) are deprecated: their

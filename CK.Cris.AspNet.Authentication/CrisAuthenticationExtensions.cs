@@ -28,6 +28,26 @@ public static class CrisAuthenticationExtensions
     }
 
     /// <summary>
+    /// Adds the authentication of the "/.cris" requests in one gesture on the builder (the "Enable" convention of CK.AspNet:
+    /// this is idempotent): its services (<see cref="AddCrisAuthentication(IServiceCollection)"/>) and its middleware
+    /// (<see cref="UseCrisAuthentication(IApplicationBuilder)"/>), prepended so that it runs before the Cris middleware
+    /// whatever the order of the calls. It enables Cris too (<see cref="CrisApplicationBuilderExtension.EnableCris"/>).
+    /// <see cref="CrisAspNetAuthenticationHosting"/> contributes it to the web applications of the host.
+    /// </summary>
+    /// <param name="builder">This builder.</param>
+    /// <returns>This builder.</returns>
+    public static WebApplicationBuilder EnableCrisAuthentication( this WebApplicationBuilder builder )
+    {
+        if( builder.TryEnable( "CrisAuthentication" ) )
+        {
+            builder.Services.AddCrisAuthentication();
+            builder.PrependApplicationBuilder( app => app.UseCrisAuthentication() );
+            builder.EnableCris();
+        }
+        return builder;
+    }
+
+    /// <summary>
     /// The features (assemblies) of the old authentication stack: an application uses one stack. The other old packages
     /// (CK.Cris.Auth, CK.Cris.AspNet.Auth.Basic, CK.TS.AspNet.Auth, CK.Ng.AspNet.Auth...) either depend on these or
     /// already conflict at setup time (CK.Cris.Auth defines the same CK.Auth.CrisAuthenticationService).
