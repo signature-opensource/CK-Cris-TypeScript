@@ -1,6 +1,6 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, inject, input, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { form, FormField, FormRoot, required } from '@angular/forms/signals';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faUserTag } from '@fortawesome/free-solid-svg-icons';
@@ -15,7 +15,8 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 @Component( {
   selector: 'ck-weak-login-form',
   imports: [
-    ReactiveFormsModule,
+    FormField,
+    FormRoot,
     TranslateModule,
     FontAwesomeModule,
     NzButtonModule,
@@ -28,7 +29,6 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 export class WeakLoginForm {
   // <PreDependencyInjection revert />
   readonly #cris = inject( HttpCrisEndpoint );
-  readonly #formBuilder = inject( FormBuilder );
   readonly #notifService = inject( NotificationService );
   readonly #translateService = inject( TranslateService );
   readonly #router = inject( Router );
@@ -45,15 +45,16 @@ export class WeakLoginForm {
   // <PostInputOutput />
 
   // <PreLocalVariables revert />
-  loginForm: FormGroup = this.#formBuilder.group( {
-    weakActorName: new FormControl( '', { nonNullable: true, validators: [Validators.required] } )
-  } );
+  readonly loginModel = signal( { weakActorName: '' } );
+  readonly loginForm = form( this.loginModel, p => {
+    required( p.weakActorName );
+  }, { name: 'weakLogin' } );
   // <PostLocalVariables />
 
   async submit(): Promise<void> {
-    if ( this.loginForm.valid ) {
+    if ( this.loginForm().valid() ) {
       const command = new WeakLoginCommand();
-      command.weakActorName = this.loginForm.get( 'weakActorName' )!.value.trim();
+      command.weakActorName = this.loginModel().weakActorName.trim();
       // <PreSendCommand revert />
       // The AuthService follows the session commands sent through the endpoint.
       const r = ( await this.#cris.sendAsync( command ) ).result;

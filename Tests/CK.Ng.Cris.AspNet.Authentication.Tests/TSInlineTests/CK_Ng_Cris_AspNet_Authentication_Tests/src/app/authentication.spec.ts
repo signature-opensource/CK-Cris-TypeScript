@@ -1,5 +1,4 @@
 import { TestBed } from '@angular/core/testing';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
 import { AuthService, AuthLevel, HttpCrisEndpoint, BasicLoginCommand, LogoutSessionCommand } from '@local/ck-gen';
 import { NgAuthService } from '@local/ck-gen/CK/Ng/Cris/AspNet/Authentication/NgAuthService';
@@ -26,7 +25,7 @@ describe( 'NgCrisAuthenticationPackage', () => {
   beforeEach( async () => {
     localStorage.clear();
     await TestBed.configureTestingModule( {
-      providers: [...CKGenAppModule.Providers, provideNoopAnimations()]
+      providers: [...CKGenAppModule.Providers]
     } ).compileComponents();
     cris = TestBed.inject( HttpCrisEndpoint );
     // Starts anonymous (the cookies of the previous test are cleared by the logout).
@@ -58,7 +57,7 @@ describe( 'NgCrisAuthenticationPackage', () => {
   it( 'the BasicLoginForm logs in', async () => {
     const fixture = TestBed.createComponent( BasicLoginForm );
     const form = fixture.componentInstance;
-    form.loginForm.setValue( { userName: "Albert", password: "success", rememberMe: true } );
+    form.loginModel.set( { userName: "Albert", password: "success", rememberMe: true } );
     await form.submit();
     expect( ngAuth.actor().actorName ).toBe( "Albert" );
     expect( auth.rememberMe ).toBe( true );
@@ -67,7 +66,7 @@ describe( 'NgCrisAuthenticationPackage', () => {
   it( 'the BasicLoginForm with wrong credentials stays anonymous', async () => {
     const fixture = TestBed.createComponent( BasicLoginForm );
     const form = fixture.componentInstance;
-    form.loginForm.setValue( { userName: "Albert", password: "failure", rememberMe: false } );
+    form.loginModel.set( { userName: "Albert", password: "failure", rememberMe: false } );
     await form.submit();
     expect( ngAuth.actor().actorId ).toBe( 0 );
   } );
@@ -84,7 +83,7 @@ describe( 'Login', () => {
   beforeEach( async () => {
     localStorage.clear();
     await TestBed.configureTestingModule( {
-      providers: [...CKGenAppModule.Providers, provideNoopAnimations(), provideRouter( [] )]
+      providers: [...CKGenAppModule.Providers, provideRouter( [] )]
     } ).compileComponents();
     await TestBed.inject( HttpCrisEndpoint ).sendAsync( new LogoutSessionCommand() );
     await TestBed.inject( AuthService ).isInitialized;
@@ -127,7 +126,6 @@ describe( 'The Critical level', () => {
     queryParams = { critical: 'true' };
     await TestBed.configureTestingModule( {
       providers: [...CKGenAppModule.Providers,
-                  provideNoopAnimations(),
                   provideRouter( [] ),
                   { provide: ActivatedRoute, useValue: { get snapshot() { return { queryParams, queryParamMap: convertToParamMap( queryParams ) }; } } }]
     } ).compileComponents();
@@ -210,7 +208,7 @@ describe( 'WeakLoginForm', () => {
   beforeEach( async () => {
     localStorage.clear();
     await TestBed.configureTestingModule( {
-      providers: [...CKGenAppModule.Providers, provideNoopAnimations(), provideRouter( [] )]
+      providers: [...CKGenAppModule.Providers, provideRouter( [] )]
     } ).compileComponents();
     await TestBed.inject( HttpCrisEndpoint ).sendAsync( new LogoutSessionCommand() );
     auth = TestBed.inject( AuthService );
@@ -225,7 +223,7 @@ describe( 'WeakLoginForm', () => {
   it( 'logs in a weak actor: it stays the anonymous (Unsafe level) and is redirected', async () => {
     const fixture = TestBed.createComponent( WeakLoginForm );
     fixture.componentRef.setInput( 'redirectTo', '/operator' );
-    fixture.componentInstance.loginForm.setValue( { weakActorName: "Operator" } );
+    fixture.componentInstance.loginModel.set( { weakActorName: "Operator" } );
     await fixture.componentInstance.submit();
     expect( auth.authenticationInfo.unsafeActor.actorName ).toBe( "Operator" );
     expect( auth.authenticationInfo.unsafeActor.level ).toBe( AuthLevel.Unsafe );
@@ -235,7 +233,7 @@ describe( 'WeakLoginForm', () => {
 
   it( 'an unknown weak actor stays where it is', async () => {
     const fixture = TestBed.createComponent( WeakLoginForm );
-    fixture.componentInstance.loginForm.setValue( { weakActorName: "Nobody" } );
+    fixture.componentInstance.loginModel.set( { weakActorName: "Nobody" } );
     await fixture.componentInstance.submit();
     expect( auth.authenticationInfo.unsafeActor.actorId ).toBe( 0 );
     expect( navigated ).toEqual( [] );

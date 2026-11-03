@@ -1,5 +1,4 @@
 import { TestBed } from '@angular/core/testing';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { CKGenAppModule } from '@local/ck-gen/CK/Angular/CKGenAppModule';
 import { AuthService, AuthLevel, HttpCrisEndpoint, LogoutSessionCommand, StartLoginCommand } from '@local/ck-gen';
 import { setLoginUserData } from '@local/ck-gen/CK/Cris/AspNet/Authentication/AuthService';
@@ -36,7 +35,7 @@ describe( 'PasskeyService', () => {
   beforeEach( async () => {
     localStorage.clear();
     await TestBed.configureTestingModule( {
-      providers: [...CKGenAppModule.Providers, provideNoopAnimations()]
+      providers: [...CKGenAppModule.Providers]
     } ).compileComponents();
     cris = TestBed.inject( HttpCrisEndpoint );
     await cris.sendAsync( new LogoutSessionCommand() );

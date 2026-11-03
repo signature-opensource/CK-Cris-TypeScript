@@ -25,6 +25,15 @@ static class LocalHelper
     /// </summary>
     public static async Task<RunningAspNetServer> CreateRunningServerAsync( string testName, Type[] commands, params Type[] otherTypes )
     {
+        return await StartServerAsync( await CreateServerMapAsync( testName, commands, otherTypes ) );
+    }
+
+    /// <summary>
+    /// Runs the engine for a server (see <see cref="CreateRunningServerAsync"/>) without starting it: a fixture
+    /// runs it once, outside the CancelAfter budget of its tests.
+    /// </summary>
+    public static async Task<IStObjMap> CreateServerMapAsync( string testName, Type[] commands, params Type[] otherTypes )
+    {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CrisAspNetService ),
                                               typeof( CrisAspNetAuthenticationPackage ),
@@ -60,7 +69,14 @@ static class LocalHelper
         // The HTTP front reads only the commands of the "TypeScript" type set.
         var tsTypes = commands.Concat( [typeof( IBasicLoginCommand ), typeof( ILogoutSessionCommand ), typeof( IRefreshSessionCommand )] ).ToArray();
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath( testName ), tsTypes );
-        var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
+        return (await configuration.RunSuccessfullyAsync()).LoadMap();
+    }
+
+    /// <summary>
+    /// Starts a server from the map of <see cref="CreateServerMapAsync"/>.
+    /// </summary>
+    public static async Task<RunningAspNetServer> StartServerAsync( IStObjMap map )
+    {
         var builder = WebApplication.CreateSlimBuilder();
         builder.Services.AddCrisAuthentication();
         return await builder.CreateRunningAspNetServerAsync( map, app =>
