@@ -8,7 +8,7 @@
   <ItemGroup>
     <PackageReference Include="CK.Cris.BackgroundExecutor" Version="3.0.0-0.cris-auth.0.ci.84" />
     <!-- The "Enable" convention and the contributions of the packages (WebApplicationContributions). -->
-    <PackageReference Include="CK.AspNet" Version="24.0.0-0.cris-auth.0.ci.30" />
+    <PackageReference Include="CK.AspNet" Version="24.0.0-0.cris-auth.0.ci.31" />
     <ProjectReference Include="..\CK.Cris.TypeScript\CK.Cris.TypeScript.csproj" />
   </ItemGroup>
 </Project>
