@@ -123,7 +123,7 @@ auth.actor.actorName; // "Alice"
 
 ## The remote logins (OpenID Connect)
 
-The authentication center holds the client secrets and does the protocol (see CK.AppIdentity.Cris.AuthCenter). This
+The authentication center holds the client secrets and does the protocol (see CK.AppIdentity.AuthCenter). This
 endpoint:
 
 1. **Start:** an `IStartLoginCommand` on `/.cris/auth`. The endpoint gives its callback URL (`/.auth/oidc/callback` of the
