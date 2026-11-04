@@ -2264,15 +2264,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ngx-translate/core@npm:^17":
-  version: 17.0.0
-  resolution: "@ngx-translate/core@npm:17.0.0"
+"@ngx-translate/core@npm:^18":
+  version: 18.1.0
+  resolution: "@ngx-translate/core@npm:18.1.0"
   dependencies:
     tslib: "npm:^2.3.0"
   peerDependencies:
-    "@angular/common": ">=16"
-    "@angular/core": ">=16"
-  checksum: 10c0/c1f51c788c76081c5e13d7b504fe2e9a868d965e2f67d60b45260104f45096984f2a21bab62136754f51b70d41a01f30dced6f8518393a8d1f910ab7082923e3
+    "@angular/common": ">=18"
+    "@angular/core": ">=18"
+    rxjs: ">=7"
+  checksum: 10c0/6ed06ca2fc89cf522b0714a2ad2f23f1e8095e5cdd3dff14463503ac7029d7ba07e707a39fc146e2b833c4e8990ad467381de7a55cf5fa887df2d055086a7547
   languageName: node
   linkType: hard
 
@@ -3892,7 +3893,7 @@ __metadata:
     "@fortawesome/free-brands-svg-icons": "npm:^7"
     "@fortawesome/free-regular-svg-icons": "npm:^7"
     "@fortawesome/free-solid-svg-icons": "npm:^7"
-    "@ngx-translate/core": "npm:^17"
+    "@ngx-translate/core": "npm:^18"
     "@types/jest": "npm:^30"
     "@types/luxon": "npm:^3.6.2"
     "@types/node": "npm:^26.6.4"
