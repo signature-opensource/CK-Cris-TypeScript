@@ -17,5 +17,5 @@ begin
         in first {^braces}
             in after "imports:"
                 in first {^[]}
-                    replace "TranslateModule" with "TranslateModule, PasskeyLoginButton";
+                    replace "TranslatePipe" with "TranslatePipe, PasskeyLoginButton";
 end

@@ -2,7 +2,7 @@ import { Component, inject, computed, input } from '@angular/core';
 import { Router } from '@angular/router';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faArrowRightFromBracket } from '@fortawesome/free-solid-svg-icons';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { NzDropdownModule } from 'ng-zorro-antd/dropdown';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
@@ -11,7 +11,7 @@ import { NgAuthService } from '@local/ck-gen/CK/Ng/Cris/AspNet/Authentication/Ng
 
 @Component( {
     selector: 'ck-user-info-box',
-    imports: [FontAwesomeModule, TranslateModule, NzAvatarModule, NzDividerModule, NzDropdownModule],
+    imports: [FontAwesomeModule, TranslatePipe, NzAvatarModule, NzDividerModule, NzDropdownModule],
     templateUrl: './user-info-box.html'
 } )
 export class UserInfoBox {

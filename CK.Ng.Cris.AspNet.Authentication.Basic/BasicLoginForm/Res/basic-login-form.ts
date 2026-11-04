@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { form, FormField, FormRoot, required } from '@angular/forms/signals';
 import { CommonModule } from '@angular/common';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faEye, faEyeSlash, faLock, faUser } from '@fortawesome/free-solid-svg-icons';
 import { NotificationService, CrisError, HttpCrisEndpoint } from '@local/ck-gen';
@@ -21,7 +21,7 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
     CommonModule,
     FormField,
     FormRoot,
-    TranslateModule,
+    TranslatePipe,
     FontAwesomeModule,
     NzButtonModule,
     NzCheckboxModule,

@@ -17,5 +17,5 @@ begin
         in first {^braces}
             in after "imports:"
                 in first {^[]}
-                    replace "TranslateModule" with "TranslateModule, WeakLoginForm";
+                    replace "TranslatePipe" with "TranslatePipe, WeakLoginForm";
 end

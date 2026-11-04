@@ -1,6 +1,6 @@
 import { Component, effect, inject, OnInit, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { Router, ActivatedRoute } from '@angular/router';
 
 import { NgAuthService } from '../NgAuthService';
@@ -13,7 +13,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
     selector: 'ck-login',
     imports: [
         CommonModule,
-        TranslateModule,
+        TranslatePipe,
         ResponsiveDirective,
         NzButtonModule
     ],

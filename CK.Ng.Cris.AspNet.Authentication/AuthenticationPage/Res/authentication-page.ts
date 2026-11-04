@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink, RouterOutlet } from '@angular/router';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 
@@ -14,7 +14,7 @@ import { ResponsiveDirective } from '@local/ck-gen';
         CommonModule,
         RouterOutlet,
         RouterLink,
-        TranslateModule,
+        TranslatePipe,
         ResponsiveDirective,
         FontAwesomeModule,
         NzButtonModule,

@@ -1,5 +1,5 @@
 import { Component, computed, inject, input, OnInit, output, signal } from '@angular/core';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faKey } from '@fortawesome/free-solid-svg-icons';
 import { NotificationService, HttpCrisEndpoint } from '@local/ck-gen';
@@ -12,7 +12,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 @Component( {
   selector: 'ck-passkey-registration-button',
   imports: [
-    TranslateModule,
+    TranslatePipe,
     FontAwesomeModule,
     NzButtonModule
   ],

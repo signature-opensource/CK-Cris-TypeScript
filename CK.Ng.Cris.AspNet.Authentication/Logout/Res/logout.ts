@@ -1,14 +1,14 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '@local/ck-gen/CK/Cris/AspNet/Authentication/AuthService';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslatePipe } from '@ngx-translate/core';
 
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzResultModule } from 'ng-zorro-antd/result';
 
 @Component( {
   selector: 'ck-logout',
-  imports: [NzButtonModule, NzResultModule, TranslateModule],
+  imports: [NzButtonModule, NzResultModule, TranslatePipe],
   templateUrl: './logout.html'
 } )
 export class Logout {

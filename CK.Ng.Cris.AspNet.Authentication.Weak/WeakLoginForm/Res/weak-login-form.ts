@@ -1,7 +1,7 @@
 import { Component, inject, input, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { form, FormField, FormRoot, required } from '@angular/forms/signals';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faUserTag } from '@fortawesome/free-solid-svg-icons';
 import { NotificationService, CrisError, HttpCrisEndpoint } from '@local/ck-gen';
@@ -17,7 +17,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
   imports: [
     FormField,
     FormRoot,
-    TranslateModule,
+    TranslatePipe,
     FontAwesomeModule,
     NzButtonModule,
     NzDividerModule,
