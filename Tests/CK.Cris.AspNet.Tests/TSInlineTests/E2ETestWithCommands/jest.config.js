@@ -20,9 +20,9 @@ module.exports = {
     testEnvironment: 'jsdom',
     globals: {
         // CK.Testing.TypeScriptEngine uses this:
-        // TestHelper.CreateTypeScriptTestRunner inject test environment variables here
+        // TestHelper.CreateTypeScriptRunner inject test environment variables here
         // in a "persistent" way: these environment variables will be available until
-        // the Runner returned by TestHelper.CreateTypeScriptTestRunner is disposed.
+        // the Runner returned by TestHelper.CreateTypeScriptRunner is disposed.
         // The CKTypeScriptEnv is then available to the tests (with whatever required like urls of
         // backend servers).
         // Do NOT alter the comments below.
@@ -30,7 +30,7 @@ module.exports = {
         CKTypeScriptEnv: {},
         // Stop-CKTypeScriptEnv
     },
-    // TestHelper.CreateTypeScriptTestRunner also replaces the 'http://localhost' (that is the default)
+    // TestHelper.CreateTypeScriptRunner also replaces the 'http://localhost' (that is the default)
     // with the server address (like 'http://[::1]:55235' - a free dynamic port is used). 
     // Do NOT alter the comments below.
     testEnvironmentOptions: { 
@@ -38,5 +38,8 @@ module.exports = {
         url: 'http://localhost',
         // Stop-CKTypeScriptSrv
     },
+    // The tests run against a real server (TestHelper.CreateTypeScriptRunner): the 5 seconds default of Jest
+    // is too short for a first test (a cold compilation and server calls) on a loaded machine.
+    testTimeout: 30000,
     setupFilesAfterEnv: ['<rootDir>/jest-setup.ts']
 };

@@ -2,7 +2,7 @@
 # Manual changes might be lost - proceed with caution!
 
 __metadata:
-  version: 8
+  version: 10
   cacheKey: 10c0
 
 "@arcanis/slice-ansi@npm:^1.1.1":
@@ -1194,7 +1194,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/jest@npm:^30.0.0":
+"@types/jest@npm:^30":
   version: 30.0.0
   resolution: "@types/jest@npm:30.0.0"
   dependencies:
@@ -1669,7 +1669,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.21.0":
+"axios@npm:^1.21":
   version: 1.21.0
   resolution: "axios@npm:1.21.0"
   dependencies:
@@ -3784,15 +3784,17 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "only_the_public_commands_are_received_and_a_configured_command_executes_inline@workspace:."
   dependencies:
-    "@types/jest": "npm:^30.0.0"
+    "@types/jest": "npm:^30"
     "@types/node": "npm:^26.6.5"
     "@yarnpkg/sdks": "npm:^3.3.1"
-    axios: "npm:^1.21.0"
+    axios: "npm:^1.21"
     jest: "npm:^30.5.2"
     jest-environment-jsdom: "npm:^30.5.2"
     jest-util: "npm:^30.5.1"
     ts-jest: "npm:^29.4.15"
     typescript: "npm:=5.4.5"
+  peerDependencies:
+    axios: ^1.21
   languageName: unknown
   linkType: soft
 
