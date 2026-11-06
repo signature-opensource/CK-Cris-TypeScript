@@ -272,3 +272,6 @@ CodeCakeBuilder/[Rr]eleases/
 
 # Because we can have subordinated .yarn folder we must exclude any .yarn/install-state.gz.
 **/.yarn/install-state.gz
+
+# The install marker of the CK.TypeScript engine (it describes the local install).
+**/.yarn/ck-install-state
