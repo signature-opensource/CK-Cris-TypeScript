@@ -71,7 +71,9 @@ public class HttpAuthenticationTests
 {
     internal static Task<RunningAspNetServer> StartServerAsync() => StartAsync();
 
-    static async Task<RunningAspNetServer> StartAsync( string? target = null, CK.AppIdentity.ApplicationIdentityService? identity = null, bool byContributions = false )
+    // A party (its "HttpEndpoint" feature): the real objects of the packages contribute EnableCrisAuthentication and
+    // EnableCris to its endpoint. A partyActorId sets the PartyActorId of the party (0: not resolved).
+    static async Task<RunningAspNetServer> StartAsync( string? target = null, int partyActorId = 0 )
     {
         target ??= TestHelper.GetTypeScriptInlineTargetProjectPath( "StartAsync" );
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
@@ -113,30 +115,19 @@ public class HttpAuthenticationTests
         // The authentication center side: its actors (FakeActorDatabase), its tokens and the operations.
         configuration.FirstBinPath.AddFakeAuthCenter();
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( target, typeof( IWhoAmIQCommand ), typeof( IWhoCallsQCommand ), typeof( IUnsafeCommand ), typeof( IBasicLoginCommand ), typeof( IWeakLoginCommand ), typeof( ILogoutSessionCommand ) );
+        configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
-        var builder = WebApplication.CreateSlimBuilder();
-        // The party model, when installed: the identity service and the CurrentLocalParty.
-        if( identity != null )
+        var server = await map.CreateRunningAspNetServerAsync( configureEndpoint: web =>
         {
-            builder.Services.AddSingleton<CK.AppIdentity.IApplicationIdentityService>( identity );
-            builder.Services.AddScoped( _ => new CK.AppIdentity.CurrentLocalParty( identity ) );
-        }
-        if( byContributions )
-        {
-            // The packages do the job: their real objects contribute EnableCrisAuthentication and EnableCris, that the
-            // host applies (as the "HttpEndpoint" feature does).
-            builder.Services.AddStObjMap( TestHelper.Monitor, map );
-            WebApplicationContributions.FindOrAdd( builder.Services ).ApplyTo( builder );
-            builder.TryEnable( "CrisAuthentication" ).ShouldBeFalse();
-            builder.TryEnable( "Cris" ).ShouldBeFalse();
-            return await builder.CreateRunningAspNetServerAsync();
-        }
-        builder.Services.AddCrisAuthentication();
-        return await builder.CreateRunningAspNetServerAsync( map, app =>
-        {
-            app.UseCrisAuthentication();
-            app.UseCris();
+            // Applied after the contributions of the packages: both features are already enabled.
+            web.TryEnable( "CrisAuthentication" ).ShouldBeFalse();
+            web.TryEnable( "Cris" ).ShouldBeFalse();
         } );
+        if( partyActorId != 0 )
+        {
+            server.Services.GetRequiredService<CK.AppIdentity.ApplicationIdentityService>().TrySetPartyActorId( TestHelper.Monitor, partyActorId ).ShouldBeTrue();
+        }
+        return server;
     }
 
     static string ToJson( RunningAspNetServer server, IPoco command )
@@ -174,11 +165,10 @@ public class HttpAuthenticationTests
         return text;
     }
 
-    [TestCase( false )]
-    [TestCase( true )]
-    public async Task login_sets_the_cookies_and_the_bearer_needs_the_binding_cookie_Async( bool byContributions )
+    [Test]
+    public async Task login_sets_the_cookies_and_the_bearer_needs_the_binding_cookie_Async()
     {
-        await using var server = await StartAsync( byContributions: byContributions );
+        await using var server = await StartAsync();
         var client = server.Client;
 
         (await PostAsync( server, "/.cris", Create<IWhoAmIQCommand>( server ) )).Result.ShouldBe( "Anonymous" );
@@ -457,16 +447,13 @@ public class HttpAuthenticationTests
     [Test]
     public async Task a_request_received_directly_has_the_local_party_as_its_caller_party_Async()
     {
-        // Without party model, the CallerPartyId is 0.
+        // When the PartyActorId of the party is not resolved (no CK.DB.AppIdentity), the CallerPartyId is 0.
         await using( var server = await StartAsync() )
         {
             (await PostAsync( server, "/.cris", Create<IWhoCallsQCommand>( server ) )).Result.ShouldBe( 0 );
         }
-        // With it, it is the PartyActorId of the current local party.
-        var config = CK.AppIdentity.ApplicationIdentityServiceConfiguration.Create( TestHelper.Monitor, c => c["FullName"] = "Test/$App" ).ShouldNotBeNull();
-        await using var identity = new CK.AppIdentity.ApplicationIdentityService( config, new ServiceCollection().BuildServiceProvider() );
-        identity.TrySetPartyActorId( TestHelper.Monitor, 3712 ).ShouldBeTrue();
-        await using( var server = await StartAsync( identity: identity ) )
+        // Otherwise, it is the PartyActorId of the current local party.
+        await using( var server = await StartAsync( partyActorId: 3712 ) )
         {
             (await PostAsync( server, "/.cris", Create<IWhoCallsQCommand>( server ) )).Result.ShouldBe( 3712 );
         }

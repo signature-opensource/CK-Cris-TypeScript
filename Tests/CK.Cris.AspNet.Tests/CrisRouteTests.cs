@@ -99,10 +99,10 @@ public class CrisRouteTests
                                               typeof( AdminPackage ),
                                               typeof( CrisAspNetService ) );
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( target, typeof( IAdminCommand ), typeof( IPlainCommand ) );
+        // A party: the "HttpEndpoint" feature serves the endpoint.
+        configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
-        var builder = WebApplication.CreateSlimBuilder();
-        builder.AppendApplicationBuilder( app => app.UseMiddleware<CrisMiddleware>() );
-        await using var runningServer = await builder.CreateRunningAspNetServerAsync( map );
+        await using var runningServer = await map.CreateRunningAspNetServerAsync( configureEndpoint: web => web.EnableCris() );
         var pocoDirectory = runningServer.Services.GetRequiredService<PocoDirectory>();
 
         string ToJson( IPoco command )

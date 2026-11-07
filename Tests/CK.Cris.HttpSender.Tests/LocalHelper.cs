@@ -69,21 +69,18 @@ static class LocalHelper
         // The HTTP front reads only the commands of the "TypeScript" type set.
         var tsTypes = commands.Concat( [typeof( IBasicLoginCommand ), typeof( ILogoutSessionCommand ), typeof( IRefreshSessionCommand )] ).ToArray();
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath( testName ), tsTypes );
+        // A party: the "HttpEndpoint" feature serves the endpoint.
+        configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
         return (await configuration.RunSuccessfullyAsync()).LoadMap();
     }
 
     /// <summary>
-    /// Starts a server from the map of <see cref="CreateServerMapAsync"/>.
+    /// Starts a server (a party) from the map of <see cref="CreateServerMapAsync"/>: its endpoint enables the Cris
+    /// authentication and Cris (the map doesn't contain the real objects that contribute them).
     /// </summary>
-    public static async Task<RunningAspNetServer> StartServerAsync( IStObjMap map )
+    public static Task<RunningAspNetServer> StartServerAsync( IStObjMap map )
     {
-        var builder = WebApplication.CreateSlimBuilder();
-        builder.Services.AddCrisAuthentication();
-        return await builder.CreateRunningAspNetServerAsync( map, app =>
-        {
-            app.UseCrisAuthentication();
-            app.UseCris();
-        } );
+        return map.CreateRunningAspNetServerAsync( configureEndpoint: web => web.EnableCrisAuthentication() );
     }
 
     public static async Task<IHost> CreateRunningCallerAsync( IStObjMap map, string serverAddress, CancellationToken cancellation = default )

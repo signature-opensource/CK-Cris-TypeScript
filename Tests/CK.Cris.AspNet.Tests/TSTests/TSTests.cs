@@ -154,9 +154,10 @@ public class TSTests
                                                                                            typeof( IBuggyCommand ),
                                                                                            typeof( IWithMessageCommand ),
                                                                                            typeof( IWithUserMessageCommand ) );
+        // A party: the "HttpEndpoint" feature serves the endpoint.
+        configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
-        var builder = WebApplication.CreateSlimBuilder();
-        await using var runningServer = await builder.CreateRunningAspNetServerAsync( map, app => app.UseMiddleware<CrisMiddleware>() );
+        await using var runningServer = await map.CreateRunningAspNetServerAsync( configureEndpoint: web => web.EnableCris() );
 
         await using var runner = TestHelper.CreateTypeScriptRunner( targetProjectPath, runningServer.ServerAddress, new Dictionary<string, string> { { "CRIS_ENDPOINT_URL", runningServer.ServerAddress + "/.cris" } } );
         // When running in Debug, this will wait until resume is set to true.

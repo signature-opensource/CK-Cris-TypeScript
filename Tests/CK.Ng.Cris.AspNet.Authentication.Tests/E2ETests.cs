@@ -55,15 +55,12 @@ public class E2ETests
         // "Operator", the passkey ceremonies. The Ng packages bring the session command handlers.
         configuration.FirstBinPath.AddFakeAuthCenter();
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( IBasicLoginCommand ), typeof( ILogoutSessionCommand ) );
+        // A party: the "HttpEndpoint" feature serves the endpoint, that enables the Cris authentication and Cris (idempotent:
+        // the contribution of the package does it when its real object is in the map).
+        configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
 
-        var builder = WebApplication.CreateSlimBuilder();
-        builder.Services.AddCrisAuthentication();
-        await using var runningServer = await builder.CreateRunningAspNetServerAsync( map, app =>
-        {
-            app.UseCrisAuthentication();
-            app.UseCris();
-        } );
+        await using var runningServer = await map.CreateRunningAspNetServerAsync( configureEndpoint: web => web.EnableCrisAuthentication() );
         // "Oidc.Microsoft" cannot elevate an actor to the Critical level.
         var center = runningServer.Services.GetRequiredService<FakeAuthCenterOperations>();
         center.LoginSchemes.Clear();

@@ -74,10 +74,10 @@ namespace CK.Cris.AspNet.Tests
                                                   typeof( TestHandler ),
                                                   typeof( CrisAspNetService ) );
 
+            // A party: the "HttpEndpoint" feature serves the endpoint.
+            configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
             var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
-            var builder = WebApplication.CreateSlimBuilder();
-            builder.AppendApplicationBuilder( app => app.UseMiddleware<CrisMiddleware>() );
-            await using var runningServer = await builder.CreateRunningAspNetServerAsync( map );
+            await using var runningServer = await map.CreateRunningAspNetServerAsync( configureEndpoint: web => web.EnableCris() );
             var client = runningServer.Client;
             var pocoDirectory = runningServer.Services.GetRequiredService<PocoDirectory>();
 
@@ -113,10 +113,10 @@ namespace CK.Cris.AspNet.Tests
                                                   typeof( BuggyValidator ),
                                                   typeof( CrisAspNetService ) );
 
+            // A party: the "HttpEndpoint" feature serves the endpoint.
+            configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
             var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
-            var builder = WebApplication.CreateSlimBuilder();
-            builder.AppendApplicationBuilder( app => app.UseMiddleware<CrisMiddleware>() );
-            await using var runningServer = await builder.CreateRunningAspNetServerAsync( map );
+            await using var runningServer = await map.CreateRunningAspNetServerAsync( configureEndpoint: web => web.EnableCris() );
             var client = runningServer.Client;
             var pocoDirectory = runningServer.Services.GetRequiredService<PocoDirectory>();
 
@@ -143,10 +143,10 @@ namespace CK.Cris.AspNet.Tests
                                                   typeof( TestHandler ),
                                                   typeof( CrisAspNetService ) );
 
+            // A party: the "HttpEndpoint" feature serves the endpoint.
+            configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
             var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
-            var builder = WebApplication.CreateSlimBuilder();
-            builder.AppendApplicationBuilder( app => app.UseMiddleware<CrisMiddleware>() );
-            await using var runningServer = await builder.CreateRunningAspNetServerAsync( map );
+            await using var runningServer = await map.CreateRunningAspNetServerAsync( configureEndpoint: web => web.EnableCris() );
             var client = runningServer.Client;
             var pocoDirectory = runningServer.Services.GetRequiredService<PocoDirectory>();
 
@@ -172,10 +172,10 @@ namespace CK.Cris.AspNet.Tests
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( CrisAspNetService ) );
 
+            // A party: the "HttpEndpoint" feature serves the endpoint.
+            configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
             var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
-            var builder = WebApplication.CreateSlimBuilder();
-            builder.AppendApplicationBuilder( app => app.UseMiddleware<CrisMiddleware>() );
-            await using var runningServer = await builder.CreateRunningAspNetServerAsync( map );
+            await using var runningServer = await map.CreateRunningAspNetServerAsync( configureEndpoint: web => web.EnableCris() );
             var client = runningServer.Client;
             var pocoDirectory = runningServer.Services.GetRequiredService<PocoDirectory>();
             // SimpleErrorResult.LogKey is null for really empty input.

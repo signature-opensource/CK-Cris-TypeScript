@@ -62,10 +62,10 @@ public class TypeFilterTests
         };
         other.Types.Add( typeof( IOtherFilteredCommand ), null );
         ts.AddOtherConfiguration( other );
+        // A party: the "HttpEndpoint" feature serves the endpoint.
+        configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
-        var builder = WebApplication.CreateSlimBuilder();
-        builder.AppendApplicationBuilder( app => app.UseMiddleware<CrisMiddleware>() );
-        return await builder.CreateRunningAspNetServerAsync( map );
+        return await map.CreateRunningAspNetServerAsync( configureEndpoint: web => web.EnableCris() );
     }
 
     static string ToJson( PocoDirectory pocoDirectory, IPoco command )
