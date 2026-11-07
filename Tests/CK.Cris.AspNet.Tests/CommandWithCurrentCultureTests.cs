@@ -68,6 +68,8 @@ public class CommandWithCurrentCultureTests
                                               typeof( CrisAspNetService ) );
 
         // A party: the "HttpEndpoint" feature serves the endpoint.
+        // Its assembly is in the bin folder of the tests.
+        configuration.FirstBinPath.Path = TestHelper.BinFolder;
         configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
         await using var runningServer = await map.CreateRunningAspNetServerAsync( configureEndpoint: web => web.EnableCris() );
@@ -116,6 +118,8 @@ public class CommandWithCurrentCultureTests
                                               typeof( CrisAspNetService ) );
 
         // A party: the "HttpEndpoint" feature serves the endpoint.
+        // Its assembly is in the bin folder of the tests.
+        configuration.FirstBinPath.Path = TestHelper.BinFolder;
         configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
         await using var runningServer = await map.CreateRunningAspNetServerAsync( configureEndpoint: web => web.EnableCris() );

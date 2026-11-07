@@ -70,6 +70,8 @@ static class LocalHelper
         var tsTypes = commands.Concat( [typeof( IBasicLoginCommand ), typeof( ILogoutSessionCommand ), typeof( IRefreshSessionCommand )] ).ToArray();
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( TestHelper.GetTypeScriptGeneratedOnlyTargetProjectPath( testName ), tsTypes );
         // A party: the "HttpEndpoint" feature serves the endpoint.
+        // Its assembly is in the bin folder of the tests.
+        configuration.FirstBinPath.Path = TestHelper.BinFolder;
         configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
         return (await configuration.RunSuccessfullyAsync()).LoadMap();
     }

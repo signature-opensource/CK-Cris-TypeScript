@@ -75,6 +75,8 @@ namespace CK.Cris.AspNet.Tests
                                                   typeof( CrisAspNetService ) );
 
             // A party: the "HttpEndpoint" feature serves the endpoint.
+            // Its assembly is in the bin folder of the tests.
+            configuration.FirstBinPath.Path = TestHelper.BinFolder;
             configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
             var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
             await using var runningServer = await map.CreateRunningAspNetServerAsync( configureEndpoint: web => web.EnableCris() );
@@ -114,6 +116,8 @@ namespace CK.Cris.AspNet.Tests
                                                   typeof( CrisAspNetService ) );
 
             // A party: the "HttpEndpoint" feature serves the endpoint.
+            // Its assembly is in the bin folder of the tests.
+            configuration.FirstBinPath.Path = TestHelper.BinFolder;
             configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
             var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
             await using var runningServer = await map.CreateRunningAspNetServerAsync( configureEndpoint: web => web.EnableCris() );
@@ -144,6 +148,8 @@ namespace CK.Cris.AspNet.Tests
                                                   typeof( CrisAspNetService ) );
 
             // A party: the "HttpEndpoint" feature serves the endpoint.
+            // Its assembly is in the bin folder of the tests.
+            configuration.FirstBinPath.Path = TestHelper.BinFolder;
             configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
             var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
             await using var runningServer = await map.CreateRunningAspNetServerAsync( configureEndpoint: web => web.EnableCris() );
@@ -173,6 +179,8 @@ namespace CK.Cris.AspNet.Tests
             configuration.FirstBinPath.Types.Add( typeof( CrisAspNetService ) );
 
             // A party: the "HttpEndpoint" feature serves the endpoint.
+            // Its assembly is in the bin folder of the tests.
+            configuration.FirstBinPath.Path = TestHelper.BinFolder;
             configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
             var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
             await using var runningServer = await map.CreateRunningAspNetServerAsync( configureEndpoint: web => web.EnableCris() );
