@@ -72,8 +72,11 @@ public class HttpAuthenticationTests
     internal static Task<RunningAspNetServer> StartServerAsync() => StartAsync();
 
     // A party (its "HttpEndpoint" feature): the real objects of the packages contribute EnableCrisAuthentication and
-    // EnableCris to its endpoint. A partyActorId sets the PartyActorId of the party (0: not resolved).
-    static async Task<RunningAspNetServer> StartAsync( string? target = null, int partyActorId = 0 )
+    // EnableCris to its endpoint. A partyActorId sets the PartyActorId of the party (0: not resolved). The identity
+    // configures the "CK-AppIdentity" section.
+    static async Task<RunningAspNetServer> StartAsync( string? target = null,
+                                                       int partyActorId = 0,
+                                                       Action<MutableConfigurationSection>? identity = null )
     {
         target ??= TestHelper.GetTypeScriptInlineTargetProjectPath( "StartAsync" );
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
@@ -119,7 +122,7 @@ public class HttpAuthenticationTests
         configuration.FirstBinPath.Path = TestHelper.BinFolder;
         configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
         var map = (await configuration.RunSuccessfullyAsync()).LoadMap();
-        var server = await map.CreateRunningAspNetServerAsync( configureEndpoint: web =>
+        var server = await map.CreateRunningAspNetServerAsync( identity, configureEndpoint: web =>
         {
             // Applied after the contributions of the packages: both features are already enabled.
             web.TryEnable( "CrisAuthentication" ).ShouldBeFalse();
@@ -411,6 +414,58 @@ public class HttpAuthenticationTests
         (await SendAsync( null, "same-origin" )).ShouldBe( HttpStatusCode.OK );
         (await SendAsync( self, "same-origin", "text/plain" )).ShouldBe( HttpStatusCode.UnsupportedMediaType );
         (await SendAsync( self, "same-origin", method: HttpMethod.Put )).ShouldBe( HttpStatusCode.MethodNotAllowed );
+    }
+
+    // A reverse proxy that terminates TLS: the browser is on https://public.example, the party receives http requests from
+    // the proxy (the loopback here) with the X-Forwarded-* headers.
+    //  - "Modern": a browser that sends Sec-Fetch-Site (the same origin check doesn't read the Origin).
+    //  - "Legacy": a browser without fetch metadata: the same origin check compares its Origin to the request's origin.
+    [TestCase( "Modern", false )]
+    [TestCase( "Modern", true )]
+    [TestCase( "Legacy", false )]
+    [TestCase( "Legacy", true )]
+    public async Task behind_a_reverse_proxy_the_session_route_needs_the_forwarded_headers_Async( string browser, bool forwardedHeaders )
+    {
+        const string publicOrigin = "https://public.example";
+        await using var server = await StartAsync( identity: c =>
+        {
+            c["Local:HttpEndpoint:Main:Urls"] = "http://127.0.0.1:0";
+            if( forwardedHeaders ) c["Local:HttpEndpoint:Main:ForwardedHeaders:KnownProxies"] = "127.0.0.1";
+        } );
+        using var http = new HttpClient( new HttpClientHandler { UseCookies = false } ) { BaseAddress = new Uri( server.ServerAddress ) };
+        var json = ToJson( server, Create<IStartLoginCommand>( server, c => c.Scheme = "Oidc.Test" ) );
+        using var m = new HttpRequestMessage( HttpMethod.Post, "/.cris/auth?UsePascalCase" ) { Content = new StringContent( json, Encoding.UTF8, "application/json" ) };
+        m.Headers.Add( "Origin", publicOrigin );
+        if( browser == "Modern" ) m.Headers.Add( "Sec-Fetch-Site", "same-origin" );
+        m.Headers.Add( "X-Forwarded-Proto", "https" );
+        m.Headers.Add( "X-Forwarded-Host", "public.example" );
+        m.Headers.Add( "X-Forwarded-For", "203.0.113.7" );
+        var r = await http.SendAsync( m );
+        if( browser == "Legacy" && !forwardedHeaders )
+        {
+            // The party sees http://127.0.0.1:port: the Origin of the browser is not its origin.
+            r.StatusCode.ShouldBe( HttpStatusCode.Forbidden );
+            return;
+        }
+        await ReadResultAsync( server, r );
+        var center = server.Services.GetRequiredService<FakeAuthCenterOperations>();
+        var setCookie = r.Headers.GetValues( "Set-Cookie" ).Single( c => c.StartsWith( CrisAuthenticationCookies.RemoteLoginCookieName + "=" ) ).ToLowerInvariant();
+        if( forwardedHeaders )
+        {
+            // The remote login is the public one: the AuthCenter accepts a callback of the public URL of the party, and
+            // the cookies are Secure.
+            center.LastStartRemote!.CallbackUrl.ShouldBe( publicOrigin + "/.auth/oidc/callback" );
+            center.LastStartRemote.WebOrigin.ShouldBe( publicOrigin );
+            setCookie.ShouldContain( "secure" );
+        }
+        else
+        {
+            // Even a modern browser is not served: the callback is the internal URL (that the AuthCenter refuses, it is
+            // not the public URL of the party) and the cookies are not Secure (a loopback host over http).
+            center.LastStartRemote!.CallbackUrl.ShouldBe( server.ServerAddress.TrimEnd( '/' ) + "/.auth/oidc/callback" );
+            center.LastStartRemote.WebOrigin.ShouldBe( server.ServerAddress.TrimEnd( '/' ) );
+            setCookie.ShouldNotContain( "secure" );
+        }
     }
 
     [Test]
