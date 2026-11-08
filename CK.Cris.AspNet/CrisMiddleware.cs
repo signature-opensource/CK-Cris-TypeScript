@@ -88,8 +88,8 @@ public class CrisMiddleware
                 PocoJsonExportOptions writeOptions;
                 if( isNetPath )
                 {
-                    // There is no option for /.cris/net: using AlwaysExportSimpleUserMessage doesn't make sense.
-                    // This uses the "AllExportable" Poco type set.
+                    // There is no option for /.cris/net: the .NET clients read the full UserMessage (UserMessageFormat.None).
+                    // This uses the "AllExchangeable" Poco type set (the default TypeFilterName).
                     writeOptions = PocoJsonExportOptions.Default;
                 }
                 else if( !typeFilterName.StartsWith( "TypeScript" ) )
