@@ -5,7 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CK.Testing.AspNetServer" Version="24.0.0-0.cris-auth.1.ci.43" />
-    <PackageReference Include="CK.Testing.TypeScriptEngine" Version="3.0.0-0.cris-auth.1.ci.86" />
+    <PackageReference Include="CK.Testing.TypeScriptEngine" Version="3.0.0-0.cris-auth.1.ci.87" />
     <PackageReference Include="CK.Cris.Authentication.Basic" Version="3.0.0-0.cris-auth.1.ci.95" />
     <PackageReference Include="CK.Cris.Authentication.Weak" Version="3.0.0-0.cris-auth.1.ci.95" />
     <PackageReference Include="CK.Testing.Cris.Authentication" Version="3.0.0-0.cris-auth.1.ci.95" />

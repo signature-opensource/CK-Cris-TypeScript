@@ -13,7 +13,7 @@
           - AND the CK.Cris.TypeScript must be referenced.
     -->
     <PackageReference Include="CK.Cris.Executor.Engine" Version="3.0.0-0.cris-auth.1.ci.95" />
-    <PackageReference Include="CK.TypeScript.Engine" Version="3.0.0-0.cris-auth.1.ci.86" />
+    <PackageReference Include="CK.TypeScript.Engine" Version="3.0.0-0.cris-auth.1.ci.87" />
     <ProjectReference Include="..\CK.Cris.AspNet\CK.Cris.AspNet.csproj" />
   </ItemGroup>
 </Project>
