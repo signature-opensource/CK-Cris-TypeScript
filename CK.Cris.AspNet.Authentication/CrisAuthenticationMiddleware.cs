@@ -138,8 +138,7 @@ public sealed class CrisAuthenticationMiddleware
         if( data == null ) return AuthenticationInfo.None;
         var binding = endpoint.PresentedBindingSecret;
         if( binding == null
-            || !CryptographicOperations.FixedTimeEquals( Encoding.ASCII.GetBytes( HttpSessionEndpoint.Hash( binding ) ),
-                                                         Encoding.ASCII.GetBytes( data.BindingSecretHash ) ) )
+            || !CryptographicOperations.FixedTimeEquals( HttpSessionEndpoint.Hash( binding ), data.BindingSecretHash ) )
         {
             monitor.Warn( ActivityMonitor.Tags.SecurityCritical, "A valid bearer token is presented without the binding secret of its session: the request is anonymous." );
             return AuthenticationInfo.None;

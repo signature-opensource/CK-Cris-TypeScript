@@ -75,7 +75,7 @@ which a sibling sub-domain bypasses.
 
 `HttpOnly`, `SameSite=Strict` (except `ck-auth-login`), host-only, `Secure` (except over http on a loopback address, for the development);
 persistent when the session is remembered. The secrets are generated here: the authentication center only knows their
-hashes (base64url SHA-256). When a session command needs the authentication center, the next secrets are prepared
+hashes (SHA-256). When a session command needs the authentication center, the next secrets are prepared
 before its operation is executed and only their hashes travel with it.
 
 ## The bearer token

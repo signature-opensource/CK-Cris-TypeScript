@@ -14,7 +14,7 @@ namespace CK.Cris.AspNet.Authentication;
 /// (see <see cref="CrisAuthenticationCookies"/>).
 /// <para>
 /// The secrets are generated here and never leave this endpoint: the authentication center only knows their hashes
-/// (base64url SHA-256 of the secret).
+/// (the SHA-256 of the secret).
 /// </para>
 /// <para>
 /// This is internal on purpose: an implementation of a <see cref="ScopedContainerConfiguredServiceAttribute"/> interface is
@@ -45,11 +45,11 @@ sealed class HttpSessionEndpoint : IAuthenticationSessionEndpoint
     }
 
     /// <summary>
-    /// Computes the hash of a secret: the base64url SHA-256 of its ASCII bytes.
+    /// Computes the hash of a secret: the SHA-256 of its ASCII bytes.
     /// </summary>
     /// <param name="secret">The secret.</param>
     /// <returns>Its hash.</returns>
-    public static string Hash( string secret ) => Base64Url.EncodeToString( SHA256.HashData( Encoding.ASCII.GetBytes( secret ) ) );
+    public static byte[] Hash( string secret ) => SHA256.HashData( Encoding.ASCII.GetBytes( secret ) );
 
     /// <summary>
     /// Gets the binding secret presented by the caller (the binding cookie). Null if none.
@@ -61,7 +61,7 @@ sealed class HttpSessionEndpoint : IAuthenticationSessionEndpoint
     /// The binding cookie (<c>Path=/.cris</c>) is sent to every route: unlike the <see cref="PresentedProof"/>, this doesn't
     /// need the refresh cookie (sent to "/.cris/auth" only).
     /// </remarks>
-    public string? PresentedBindingSecretHash => PresentedBindingSecret is { Length: > 0 } binding ? Hash( binding ) : null;
+    public byte[]? PresentedBindingSecretHash => PresentedBindingSecret is { Length: > 0 } binding ? Hash( binding ) : null;
 
     /// <inheritdoc />
     public AuthenticationSessionProof? PresentedProof
@@ -98,7 +98,7 @@ sealed class HttpSessionEndpoint : IAuthenticationSessionEndpoint
     static string NewSecret() => Base64Url.EncodeToString( RandomNumberGenerator.GetBytes( 32 ) );
 
     /// <inheritdoc />
-    public (string RefreshSecretHash, string BindingSecretHash) PrepareSecrets()
+    public (byte[] RefreshSecretHash, byte[] BindingSecretHash) PrepareSecrets()
     {
         var p = (NewSecret(), NewSecret());
         _prepared = p;
@@ -165,7 +165,7 @@ sealed class HttpSessionEndpoint : IAuthenticationSessionEndpoint
     }
 
     /// <inheritdoc />
-    public string PrepareRemoteLogin()
+    public byte[] PrepareRemoteLogin()
     {
         var secret = NewSecret();
         var (inline, returnUrl) = _remoteLoginEnd ?? (false, null);
@@ -202,7 +202,7 @@ sealed class HttpSessionEndpoint : IAuthenticationSessionEndpoint
     }
 
     /// <inheritdoc />
-    public string? PresentedRemoteLoginHash => PresentedRemoteLogin is { } r ? Hash( r.Secret ) : null;
+    public byte[]? PresentedRemoteLoginHash => PresentedRemoteLogin is { } r ? Hash( r.Secret ) : null;
 
     /// <summary>
     /// Deletes the remote login cookie (a remote login can be completed once).
