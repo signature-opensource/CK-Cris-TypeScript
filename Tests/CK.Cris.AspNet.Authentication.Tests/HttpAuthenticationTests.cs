@@ -127,7 +127,7 @@ public class HttpAuthenticationTests
                                               typeof( ICultureAmbientValues ) );
         // The authentication center side: its actors (FakeActorDatabase), its tokens and the operations.
         configuration.FirstBinPath.AddFakeAuthCenter();
-        configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( target, typeof( IWhoAmIQCommand ), typeof( IWhoCallsQCommand ), typeof( IUnsafeCommand ), typeof( IBasicLoginCommand ), typeof( IWeakLoginCommand ), typeof( ILogoutSessionCommand ) );
+        configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( target, typeof( IWhoAmIQCommand ), typeof( IWhoCallsQCommand ), typeof( IHasAcceptedTokenQCommand ), typeof( IUnsafeCommand ), typeof( IBasicLoginCommand ), typeof( IWeakLoginCommand ), typeof( ILogoutSessionCommand ) );
         // Its assembly is in the bin folder of the tests.
         configuration.FirstBinPath.Path = TestHelper.BinFolder;
         configuration.FirstBinPath.Assemblies.Add( AspNetServerTestHelperExtensions.HttpEndpointAssembly );
