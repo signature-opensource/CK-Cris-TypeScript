@@ -83,7 +83,9 @@ before its operation is executed and only their hashes travel with it.
 A request that presents a bearer token is authenticated with `IAuthenticationTokenReader` (implemented by the
 authentication center package) **only if it also presents the binding secret of the token's session**: a stolen token
 cannot be used from another browser. Otherwise the request is anonymous. The authentication of the request is the scoped
-`AuthenticationInfo` (see [`HttpAuthenticationContext`](HttpAuthenticationContext.cs)).
+`AuthenticationInfo` (see [`HttpAuthenticationContext`](HttpAuthenticationContext.cs)). Only an accepted token becomes the
+endpoint's `AcceptedToken`: the user's proof that may be relayed to another party with a command (a refused token is never
+relayed).
 
 ## The TypeScript client: `AuthService`
 

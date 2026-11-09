@@ -34,6 +34,13 @@ public interface IWhoAmIQCommand : ICommand<string>
 }
 
 /// <summary>
+/// Answers whether the endpoint accepted the presented token (the user's proof that may be relayed).
+/// </summary>
+public interface IHasAcceptedTokenQCommand : ICommand<bool>
+{
+}
+
+/// <summary>
 /// Answers the CallerPartyFullName of the request.
 /// </summary>
 public interface IWhoCallsQCommand : ICommand<string?>
@@ -47,6 +54,9 @@ public sealed class WhoAmIHandler : ISingletonAutoService
 
     [CommandHandler]
     public string Handle( IWhoAmIQCommand c, AuthenticationInfo info ) => info.UnsafeActor.IsAnonymous ? "Anonymous" : info.UnsafeActor.ActorName;
+
+    [CommandHandler]
+    public bool Handle( IHasAcceptedTokenQCommand c, IAuthenticationSessionEndpoint endpoint ) => endpoint.AcceptedToken != null;
 }
 
 /// <summary>
@@ -96,6 +106,7 @@ public class HttpAuthenticationTests
                                               typeof( WhoAmIHandler ),
                                               typeof( IWhoAmIQCommand ),
                                               typeof( IWhoCallsQCommand ),
+                                              typeof( IHasAcceptedTokenQCommand ),
                                               typeof( IUnsafeCommand ),
                                               typeof( UnsafeHandler ),
                                               typeof( IBasicLoginCommand ),
@@ -193,6 +204,7 @@ public class HttpAuthenticationTests
         // The bearer token with the binding cookie: authenticated.
         client.Token = login.Token;
         (await PostAsync( server, "/.cris", Create<IWhoAmIQCommand>( server ) )).Result.ShouldBe( "Albert" );
+        (await PostAsync( server, "/.cris", Create<IHasAcceptedTokenQCommand>( server ) )).Result.ShouldBe( true, "Only an accepted token may be relayed." );
 
         // The same token without the binding cookie (stolen token): anonymous.
         using( var thief = new HttpClient() { BaseAddress = new Uri( server.ServerAddress ) } )
@@ -200,6 +212,8 @@ public class HttpAuthenticationTests
             thief.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue( "Bearer", login.Token );
             var stolen = await thief.PostAsync( "/.cris?UsePascalCase", new StringContent( ToJson( server, Create<IWhoAmIQCommand>( server ) ), Encoding.UTF8, "application/json" ) );
             (await ReadResultAsync( server, stolen )).Result.ShouldBe( "Anonymous" );
+            var notAccepted = await thief.PostAsync( "/.cris?UsePascalCase", new StringContent( ToJson( server, Create<IHasAcceptedTokenQCommand>( server ) ), Encoding.UTF8, "application/json" ) );
+            (await ReadResultAsync( server, notAccepted )).Result.ShouldBe( false, "A refused token is never relayed." );
         }
 
         // Logout clears the cookies: the token is useless.

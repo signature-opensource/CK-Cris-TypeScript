@@ -89,6 +89,12 @@ sealed class HttpSessionEndpoint : IAuthenticationSessionEndpoint
         }
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Set by the <see cref="CrisAuthenticationMiddleware"/> when it authenticates the request with the presented token.
+    /// </remarks>
+    public string? AcceptedToken { get; internal set; }
+
     static string NewSecret() => Base64Url.EncodeToString( RandomNumberGenerator.GetBytes( 32 ) );
 
     /// <inheritdoc />

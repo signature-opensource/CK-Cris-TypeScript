@@ -144,6 +144,8 @@ public sealed class CrisAuthenticationMiddleware
             monitor.Warn( ActivityMonitor.Tags.SecurityCritical, "A valid bearer token is presented without the binding secret of its session: the request is anonymous." );
             return AuthenticationInfo.None;
         }
+        // Only an accepted token is relayed to another party (the user's proof).
+        endpoint.AcceptedToken = token;
         return data.Info;
     }
 
