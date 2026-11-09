@@ -4,9 +4,9 @@
     <Description>The Weak login form (a weak actor name, no password) of CK.Ng.Cris.AspNet.Authentication: it sends the IWeakLoginCommand.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.IO.Authentication.Weak" Version="3.0.0-0.cris-auth.1.ci.60" />
+    <PackageReference Include="CK.IO.Authentication.Weak" Version="3.0.0-0.cris-auth.1.ci.61" />
     <!-- The endpoint that serves this form executes the Weak login (same origin). -->
-    <PackageReference Include="CK.Cris.Authentication.Weak" Version="3.0.0-0.cris-auth.1.ci.104" />
+    <PackageReference Include="CK.Cris.Authentication.Weak" Version="3.0.0-0.cris-auth.1.ci.106" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Ng.Cris.AspNet.Authentication\CK.Ng.Cris.AspNet.Authentication.csproj" />

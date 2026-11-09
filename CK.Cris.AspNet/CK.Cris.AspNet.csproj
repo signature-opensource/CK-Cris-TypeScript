@@ -6,7 +6,7 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Cris.BackgroundExecutor" Version="3.0.0-0.cris-auth.1.ci.104" />
+    <PackageReference Include="CK.Cris.BackgroundExecutor" Version="3.0.0-0.cris-auth.1.ci.106" />
     <!-- The "Enable" convention and the contributions of the packages (WebApplicationContributions). -->
     <PackageReference Include="CK.AspNet" Version="24.0.0-0.cris-auth.1.ci.53" />
     <ProjectReference Include="..\CK.Cris.TypeScript\CK.Cris.TypeScript.csproj" />
