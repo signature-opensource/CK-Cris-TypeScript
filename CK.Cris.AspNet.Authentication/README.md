@@ -54,9 +54,9 @@ dispatched the same way, with the user's proof (see CK.AppIdentity.Cris.Authenti
 Only the public commands are received: an `[Internal]` or `[Private]` command is refused on every route (see
 `CrisAspNetService.HandleRequestAsync`).
 
-**The caller party.** A request is received directly: the `CallerPartyId` of its `AuthenticationInfo` is the
-`PartyActorId` of the `CurrentLocalParty` (this package references CK.AppIdentity.Abstractions). It is 0 when the party
-model is not installed (no `IApplicationIdentityService`) or when the identifier is not resolved yet.
+**The caller party.** A request is received directly: the `CallerPartyFullName` of its `AuthenticationInfo` is the
+`FullName` of the `CurrentLocalParty` (this package references CK.AppIdentity.Abstractions). It is null when the party
+model is not installed (no `IApplicationIdentityService`).
 
 ## Same origin, always checked
 

@@ -34,16 +34,16 @@ public interface IWhoAmIQCommand : ICommand<string>
 }
 
 /// <summary>
-/// Answers the CallerPartyId of the request.
+/// Answers the CallerPartyFullName of the request.
 /// </summary>
-public interface IWhoCallsQCommand : ICommand<int>
+public interface IWhoCallsQCommand : ICommand<string?>
 {
 }
 
 public sealed class WhoAmIHandler : ISingletonAutoService
 {
     [CommandHandler]
-    public int Handle( IWhoCallsQCommand c, AuthenticationInfo info ) => info.CallerPartyId;
+    public string? Handle( IWhoCallsQCommand c, AuthenticationInfo info ) => info.CallerPartyFullName;
 
     [CommandHandler]
     public string Handle( IWhoAmIQCommand c, AuthenticationInfo info ) => info.UnsafeActor.IsAnonymous ? "Anonymous" : info.UnsafeActor.ActorName;
@@ -72,10 +72,9 @@ public class HttpAuthenticationTests
     internal static Task<RunningAspNetServer> StartServerAsync() => StartAsync();
 
     // A party (its "HttpEndpoint" feature): the real objects of the packages contribute EnableCrisAuthentication and
-    // EnableCris to its endpoint. A partyActorId sets the PartyActorId of the party (0: not resolved). The identity
+    // EnableCris to its endpoint. The identity
     // configures the "CK-AppIdentity" section.
     static async Task<RunningAspNetServer> StartAsync( string? target = null,
-                                                       int partyActorId = 0,
                                                        Action<MutableConfigurationSection>? identity = null )
     {
         target ??= TestHelper.GetTypeScriptInlineTargetProjectPath( "StartAsync" );
@@ -128,10 +127,6 @@ public class HttpAuthenticationTests
             web.TryEnable( "CrisAuthentication" ).ShouldBeFalse();
             web.TryEnable( "Cris" ).ShouldBeFalse();
         } );
-        if( partyActorId != 0 )
-        {
-            server.Services.GetRequiredService<CK.AppIdentity.ApplicationIdentityService>().TrySetPartyActorId( TestHelper.Monitor, partyActorId ).ShouldBeTrue();
-        }
         return server;
     }
 
@@ -504,15 +499,9 @@ public class HttpAuthenticationTests
     [Test]
     public async Task a_request_received_directly_has_the_local_party_as_its_caller_party_Async()
     {
-        // When the PartyActorId of the party is not resolved (no CK.DB.AppIdentity), the CallerPartyId is 0.
-        await using( var server = await StartAsync() )
-        {
-            (await PostAsync( server, "/.cris", Create<IWhoCallsQCommand>( server ) )).Result.ShouldBe( 0 );
-        }
-        // Otherwise, it is the PartyActorId of the current local party.
-        await using( var server = await StartAsync( partyActorId: 3712 ) )
-        {
-            (await PostAsync( server, "/.cris", Create<IWhoCallsQCommand>( server ) )).Result.ShouldBe( 3712 );
-        }
+        // The caller party is the full name of the current local party.
+        await using var server = await StartAsync();
+        var local = server.Services.GetRequiredService<CK.AppIdentity.ApplicationIdentityService>();
+        (await PostAsync( server, "/.cris", Create<IWhoCallsQCommand>( server ) )).Result.ShouldBe( local.FullName.Path );
     }
 }

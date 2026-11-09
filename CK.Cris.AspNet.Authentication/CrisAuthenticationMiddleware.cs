@@ -84,7 +84,7 @@ public sealed class CrisAuthenticationMiddleware
         var auth = services.GetRequiredService<HttpAuthenticationContext>();
         var endpoint = new HttpSessionEndpoint( ctx );
         auth.HttpEndpoint = endpoint;
-        auth.Info = (await AuthenticateAsync( monitor, services, endpoint )).WithCallerParty( GetCallerPartyId( services ) );
+        auth.Info = (await AuthenticateAsync( monitor, services, endpoint )).WithCallerParty( GetCallerPartyFullName( services ) );
         if( ctx.Request.Path == _authPath )
         {
             await HandleCommandAsync( ctx, monitor, c => OverrideSessionCommand( monitor, c, endpoint ) );
@@ -113,15 +113,15 @@ public sealed class CrisAuthenticationMiddleware
         return true;
     }
 
-    // A request is received directly: the party through which the identity entered is our local party. Its PartyActorId is
-    // 0 when the party model is not installed or when it is not resolved yet. The party model is installed when there is an
-    // IApplicationIdentityService (referencing CK.AppIdentity.Abstractions registers the CurrentLocalParty, but its default
-    // value then cannot be resolved without it).
-    static int GetCallerPartyId( IServiceProvider services )
+    // A request is received directly: the party through which the identity entered is our local party, its full name.
+    // Null when the party model is not installed. The party model is installed when there is an IApplicationIdentityService
+    // (referencing CK.AppIdentity.Abstractions registers the CurrentLocalParty, but its default value then cannot be
+    // resolved without it).
+    static string? GetCallerPartyFullName( IServiceProvider services )
     {
         return services.GetService<IApplicationIdentityService>() != null
-                ? services.GetRequiredService<CurrentLocalParty>().LocalParty.PartyActorId
-                : 0;
+                ? services.GetRequiredService<CurrentLocalParty>().LocalParty.FullName
+                : null;
     }
 
     static async Task<AuthenticationInfo> AuthenticateAsync( IActivityMonitor monitor, IServiceProvider services, HttpSessionEndpoint endpoint )
@@ -216,7 +216,7 @@ public sealed class CrisAuthenticationMiddleware
         var endpoint = new HttpSessionEndpoint( ctx );
         // A navigation carries no bearer: the request is anonymous.
         auth.HttpEndpoint = endpoint;
-        auth.Info = AuthenticationInfo.None.WithCallerParty( GetCallerPartyId( services ) );
+        auth.Info = AuthenticationInfo.None.WithCallerParty( GetCallerPartyFullName( services ) );
         var presented = endpoint.PresentedRemoteLogin;
         endpoint.ClearRemoteLogin();
         var q = ctx.Request.Query;
