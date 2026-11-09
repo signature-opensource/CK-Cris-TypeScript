@@ -41,10 +41,6 @@ describe( 'PasskeyService', () => {
     await cris.sendAsync( new LogoutSessionCommand() );
     auth = TestBed.inject( AuthService );
     await auth.isInitialized;
-    // The logout above is sent before the AuthService exists: nothing updates the ambient values of the endpoint, that
-    // may still carry the ActorId of the previous test's login (the command is then refused with "Invalid actor
-    // identifier"). The next commands must carry the ambient values of the anonymous session.
-    await cris.updateAmbientValuesAsync();
   } );
 
   afterEach( () => { auth.close(); removeWebAuthn(); } );

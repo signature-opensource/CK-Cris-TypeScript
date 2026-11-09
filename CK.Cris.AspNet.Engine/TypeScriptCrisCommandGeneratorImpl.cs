@@ -498,6 +498,9 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                     export abstract class CrisEndpoint
                     {
                         #ambientValuesRequest: Promise<AmbientValues>|undefined;
+                        // The number of calls to updateAmbientValuesAsync: a request in flight that answers after a newer
+                        // call is sent again (its answer may be stale).
+                        #ambientValuesCalls: number;
                         // This should not appear here. This will be fixed in a future release.
                         ___a: AmbientValues|undefined;
                         #subscribers: Set<( eventSource: CrisEndpoint ) => void>;
@@ -510,6 +513,7 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                         constructor()
                         {
                             this.ambientValuesOverride = new AmbientValuesOverride();
+                            this.#ambientValuesCalls = 0;
                             this.#isConnected = false;
                             this.#subscribers = new Set<() => void>();
                             this.#retryDelay = 0;
@@ -601,9 +605,16 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                         * backoff (see retryMinDelay and retryMaxDelay). When the server answers with an error, this
                         * rejects with the CrisError: the next call (or the next sent command) tries again.
                         * </para>
+                        * <para>
+                        * The values come from a request sent after this call: the ambient values depend on the
+                        * authentication (the actor identifier), and a call follows a change of it (a login, a logout...).
+                        * When a request is in flight, its answer may be the one of the previous authentication: this call
+                        * shares it, and it is sent again once it answers.
+                        * </para>
                         **/
                         public updateAmbientValuesAsync() : Promise<AmbientValues>
                         {
+                            ++this.#ambientValuesCalls;
                             if( this.#ambientValuesRequest ) return this.#ambientValuesRequest;
                             this.___a = undefined;
                             return this.#ambientValuesRequest = this.waitForAmbientValuesAsync();
@@ -658,9 +669,12 @@ public sealed partial class TypeScriptCrisCommandGeneratorImpl : ITSCodeGenerato
                             {
                                 while(true)
                                 {
+                                    const calls = this.#ambientValuesCalls;
                                     const e = await this.doSendAsync( new AmbientValuesCollectCommand() );
                                     if( !(e.result instanceof CrisError) )
                                     {
+                                        // A call happened while the request was in flight: its answer may be stale.
+                                        if( calls !== this.#ambientValuesCalls ) continue;
                                         this.#retryDelay = 0;
                                         this.#ambientValuesRequest = undefined;
                                         this.___a = <AmbientValues>e.result;
