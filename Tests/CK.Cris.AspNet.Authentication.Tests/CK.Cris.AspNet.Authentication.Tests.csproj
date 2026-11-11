@@ -6,9 +6,9 @@
   <ItemGroup>
     <PackageReference Include="CK.Testing.AspNetServer" Version="24.0.0-0.cris-auth.1.ci.61" />
     <PackageReference Include="CK.Testing.TypeScriptEngine" Version="3.0.0-0.cris-auth.1.ci.104" />
-    <PackageReference Include="CK.Cris.Authentication.Basic" Version="3.0.0-0.cris-auth.1.ci.122" />
-    <PackageReference Include="CK.Cris.Authentication.Weak" Version="3.0.0-0.cris-auth.1.ci.122" />
-    <PackageReference Include="CK.Testing.Cris.Authentication" Version="3.0.0-0.cris-auth.1.ci.122" />
+    <PackageReference Include="CK.Cris.Authentication.Basic" Version="3.0.0-0.cris-auth.1.ci.123" />
+    <PackageReference Include="CK.Cris.Authentication.Weak" Version="3.0.0-0.cris-auth.1.ci.123" />
+    <PackageReference Include="CK.Testing.Cris.Authentication" Version="3.0.0-0.cris-auth.1.ci.123" />
     <PackageReference Include="CK.AppIdentity" Version="3.0.0-0.cris-auth.1.ci.59" />
     <PackageReference Include="CK.Testing.NUnit" Version="18.0.0-0.cris-auth.0.ci.8" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
