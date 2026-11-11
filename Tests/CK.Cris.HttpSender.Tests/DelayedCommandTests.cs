@@ -142,10 +142,14 @@ public class DelayedCommandTests
         await sender.SendOrThrowAsync( TestHelper.Monitor, fullCommand, cancellationToken: cancellation );
         FullCommandService.MessageAt( 0 ).ShouldMatch( "n°1-Albert-Albert-the-device-en-.*" );
 
-        // Delayed command now.
+        // Delayed command now. It requires a Normal authentication: without the ActorId, it is refused.
         var delayed = callerPoco.Create<IDelayedCommand>();
         delayed.Command = fullCommand;
         delayed.ExecutionDate = DateTime.UtcNow.AddMilliseconds( 150 );
+        var anonymous = await sender.SendAsync( TestHelper.Monitor, delayed, cancellationToken: cancellation );
+        anonymous.Result.ShouldBeAssignableTo<ICrisResultError>().ShouldNotBeNull().IsValidationError.ShouldBeTrue( "Its ActorId is not the authenticated actor." );
+        FullCommandService.MessageCount.ShouldBe( 1, "Nothing has been stored." );
+        delayed.ActorId = loginAlbert.Info.UnsafeActor.ActorId;
 
         FullCommandService.ClearMessage();
         await sender.SendOrThrowAsync( TestHelper.Monitor, delayed, cancellationToken: cancellation );
