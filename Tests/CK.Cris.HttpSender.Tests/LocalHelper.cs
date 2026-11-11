@@ -85,7 +85,7 @@ static class LocalHelper
         return map.CreateRunningAspNetServerAsync( configureEndpoint: web => web.EnableCrisAuthentication() );
     }
 
-    public static async Task<IHost> CreateRunningCallerAsync( IStObjMap map, string serverAddress, CancellationToken cancellation = default )
+    public static async Task<IHost> CreateRunningCallerAsync( IStObjMap map, string serverAddress, CancellationToken cancellation = default, bool retry = false )
     {
         var callerBuilder = Host.CreateEmptyApplicationBuilder( new HostApplicationBuilderSettings { DisableDefaults = true, EnvironmentName = Environments.Development } );
         var c = callerBuilder.Configuration;
@@ -97,11 +97,13 @@ static class LocalHelper
             // One hour timeout when Debugger.IsAttached.
             c["CK-AppIdentity:Parties:0:CrisHttpSender:Timeout"] = "00:01:00";
         }
-        else
+        else if( !retry )
         {
             // Otherwise use the default 100 seconds timeout.
             c["CK-AppIdentity:Parties:0:CrisHttpSender"] = "true";
         }
+        // The retry is opt-in.
+        if( retry ) c["CK-AppIdentity:Parties:0:CrisHttpSender:Retry"] = "true";
         callerBuilder.AddApplicationIdentityServiceConfiguration();
         callerBuilder.Services.AddStObjMap( TestHelper.Monitor, map );
         var caller = callerBuilder.CKBuild();

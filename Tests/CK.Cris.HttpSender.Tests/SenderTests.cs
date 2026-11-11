@@ -205,7 +205,7 @@ public class SenderTests
         var map = (await callerEngineConfiguration.RunSuccessfullyAsync()).LoadMap();
 
         // The serverAddress http://[::1]:65036/ has no running server.
-        using var runningCaller = await LocalHelper.CreateRunningCallerAsync( map, "http://[::1]:65036/" );
+        using var runningCaller = await LocalHelper.CreateRunningCallerAsync( map, "http://[::1]:65036/", retry: true );
         var callerPoco = runningCaller.Services.GetRequiredService<PocoDirectory>();
         var sender = runningCaller.Services.GetRequiredService<ApplicationIdentityService>().Remotes
                                             .Single( r => r.PartyName == "$Server" )
@@ -219,11 +219,12 @@ public class SenderTests
         using( TestHelper.Monitor.CollectTexts( out var logs ) )
         {
             var result = await sender.SendAsync( TestHelper.Monitor, cmd );
-            logs.ShouldContain( """Sending ["CK.Cris.HttpSender.Tests.IBeautifulCommand",{"beauty":"Marvellous","waitTime":0,"color":"Black"}] to 'Domain/$Server/#Dev'.""" )
-                .ShouldContain( """Request failed on 'Domain/$Server/#Dev' (attempt n°0).""" )
+            // The command is logged with its log string (sensitive values redacted), never its raw payload.
+            logs.ShouldContain( t => t.StartsWith( "Sending " ) && t.Contains( "Marvellous" ) && t.EndsWith( " to 'Domain/$Server/#Dev'." ) );
+            logs.ShouldContain( """Request failed on 'Domain/$Server/#Dev' (attempt n°0).""" )
                 .ShouldContain( """Request failed on 'Domain/$Server/#Dev' (attempt n°1).""" )
-                .ShouldContain( """Request failed on 'Domain/$Server/#Dev' (attempt n°2).""" )
-                .ShouldContain( """While sending: ["CK.Cris.HttpSender.Tests.IBeautifulCommand",{"beauty":"Marvellous","waitTime":0,"color":"Black"}]""" );
+                .ShouldContain( """Request failed on 'Domain/$Server/#Dev' (attempt n°2).""" );
+            logs.ShouldContain( t => t.StartsWith( "While sending: " ) && t.Contains( "Marvellous" ) );
         }
     }
 
