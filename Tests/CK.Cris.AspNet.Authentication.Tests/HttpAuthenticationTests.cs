@@ -438,8 +438,8 @@ public class HttpAuthenticationTests
         const string publicOrigin = "https://public.example";
         await using var server = await StartAsync( identity: c =>
         {
-            c["Local:HttpEndpoint:Main:Urls"] = "http://127.0.0.1:0";
-            if( forwardedHeaders ) c["Local:HttpEndpoint:Main:ForwardedHeaders:KnownProxies"] = "127.0.0.1";
+            c["Local:HttpEndpoint:Urls"] = "http://127.0.0.1:0";
+            if( forwardedHeaders ) c["Local:HttpEndpoint:ForwardedHeaders:KnownProxies"] = "127.0.0.1";
         } );
         using var http = new HttpClient( new HttpClientHandler { UseCookies = false } ) { BaseAddress = new Uri( server.ServerAddress ) };
         var json = ToJson( server, Create<IStartLoginCommand>( server, c => c.Scheme = "Oidc.Test" ) );
