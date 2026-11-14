@@ -25,7 +25,7 @@
     -->
   <ItemGroup>
     <PackageReference Include="CK.Cris" Version="3.0.0-0.uc.0.ci.68" />
-    <PackageReference Include="CK.TypeScript" Version="3.0.0-0.uc.0.ci.114" />
+    <PackageReference Include="CK.TypeScript" Version="3.0.0-0.uc.0.ci.115" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="MSBuild/CK.Cris.TypeScript.targets">
