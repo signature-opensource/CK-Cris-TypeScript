@@ -45,6 +45,7 @@ public class SenderTests
                                                           typeof( CrisDirectory ),
                                                           typeof( CommonPocoJsonSupport ),
                                                           typeof( ApplicationIdentityService ),
+                                                          typeof( PartyComponentDirectory ),
                                                           typeof( CrisHttpSenderFeatureDriver ) );
 
         var callerMap = (await callerEngineConfiguration.RunSuccessfullyAsync()).LoadMap();
@@ -200,6 +201,7 @@ public class SenderTests
                                                           typeof( CrisDirectory ),
                                                           typeof( CommonPocoJsonSupport ),
                                                           typeof( ApplicationIdentityService ),
+                                                          typeof( PartyComponentDirectory ),
                                                           typeof( ApplicationIdentityServiceConfiguration ),
                                                           typeof( CrisHttpSenderFeatureDriver ) );
         var map = (await callerEngineConfiguration.RunSuccessfullyAsync()).LoadMap();

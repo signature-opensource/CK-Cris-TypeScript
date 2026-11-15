@@ -101,6 +101,7 @@ public class DelayedCommandTests
                                            typeof( CrisDirectory ),
                                            typeof( CommonPocoJsonSupport ),
                                            typeof( ApplicationIdentityService ),
+                                           typeof( PartyComponentDirectory ),
                                            typeof( CrisHttpSenderFeatureDriver ) );
         _callerMap = (await callerConf.RunSuccessfullyAsync()).LoadMap();
     }
