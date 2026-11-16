@@ -11,7 +11,7 @@
   <ItemGroup>
     <PackageReference Include="CK.Testing.StObjEngine" Version="36.0.1-0.uc.0.ci.19" />
     <PackageReference Include="CK.Testing.AspNetServer" Version="24.0.0-0.uc.0.ci.87" />
-    <PackageReference Include="CK.Testing.TypeScriptEngine" Version="3.0.0-0.uc.0.ci.129" />
+    <PackageReference Include="CK.Testing.TypeScriptEngine" Version="3.0.0-0.uc.0.ci.130" />
     <PackageReference Include="CK.AppIdentity.Hosting" Version="3.0.0-0.uc.0.ci.98" />
   </ItemGroup>
   <ItemGroup>
