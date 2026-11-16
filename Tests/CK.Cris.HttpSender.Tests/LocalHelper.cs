@@ -62,7 +62,7 @@ static class LocalHelper
                                               typeof( CK.Cris.AmbientValues.AmbientValuesService ),
                                               typeof( IAuthAmbientValues ),
                                               typeof( ICultureAmbientValues ) );
-        // The authentication center side (CK.Testing.Cris.Authentication): Albert (3712) logs in with "success".
+        // The authentication center side (CK.Testing.Engine.Cris.Authentication): Albert (3712) logs in with "success".
         configuration.FirstBinPath.AddFakeAuthCenter();
         configuration.FirstBinPath.Types.Add( commands );
         configuration.FirstBinPath.Types.Add( otherTypes );

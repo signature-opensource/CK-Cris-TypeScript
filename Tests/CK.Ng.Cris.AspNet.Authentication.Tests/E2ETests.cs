@@ -51,7 +51,7 @@ public class E2ETests
                                               typeof( CK.Cris.AmbientValues.AmbientValuesService ),
                                               typeof( IAuthAmbientValues ),
                                               typeof( ICultureAmbientValues ) );
-        // The authentication center side (CK.Testing.Cris.Authentication): Albert (3712) logs in with "success", the weak
+        // The authentication center side (CK.Testing.Engine.Cris.Authentication): Albert (3712) logs in with "success", the weak
         // "Operator", the passkey ceremonies. The Ng packages bring the session command handlers.
         configuration.FirstBinPath.AddFakeAuthCenter();
         configuration.FirstBinPath.EnsureTypeScriptConfigurationAspect( targetProjectPath, typeof( IBasicLoginCommand ), typeof( ILogoutSessionCommand ) );
