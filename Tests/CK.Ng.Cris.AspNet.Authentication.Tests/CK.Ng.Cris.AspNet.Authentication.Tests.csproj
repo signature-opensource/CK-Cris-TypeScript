@@ -4,10 +4,10 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.Engine.HttpEndpoint" Version="25.0.0-0.uc.0.ci.6" />
-    <PackageReference Include="CK.Testing.Engine.TypeScript" Version="4.0.0-0.uc.0.ci.6" />
-    <PackageReference Include="CK.Testing.Engine.Cris.Authentication" Version="3.0.0-0.uc.0.ci.150" />
-    <PackageReference Include="CK.TS.Angular.Engine" Version="3.0.1-0.uc.0.ci.64" />
+    <PackageReference Include="CK.Testing.Engine.HttpEndpoint" Version="25.0.0-0.uc.0.ci.7" />
+    <PackageReference Include="CK.Testing.Engine.TypeScript" Version="4.0.0-0.uc.0.ci.7" />
+    <PackageReference Include="CK.Testing.Engine.Cris.Authentication" Version="3.0.0-0.uc.0.ci.151" />
+    <PackageReference Include="CK.TS.Angular.Engine" Version="3.0.1-0.uc.0.ci.65" />
     <PackageReference Include="CK.Testing.NUnit" Version="18.0.0-0.cris-auth.0.ci.8" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="6.3.1" />
