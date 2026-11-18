@@ -9,18 +9,18 @@
     <PackageReference Include="NUnit3TestAdapter" Version="6.3.1" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.Engine" Version="37.0.0-0.uc.0.ci.12" />
-    <PackageReference Include="CK.Testing.Engine.HttpEndpoint" Version="25.0.0-0.uc.0.ci.10" />
-    <PackageReference Include="CK.Testing.Engine.TypeScript" Version="4.0.0-0.uc.0.ci.10" />
-    <PackageReference Include="CK.AppIdentity.Hosting" Version="3.0.0-0.uc.0.ci.111" />
+    <PackageReference Include="CK.Testing.Engine" Version="37.0.0-0.uc.0.ci.13" />
+    <PackageReference Include="CK.Testing.Engine.HttpEndpoint" Version="25.0.0-0.uc.0.ci.12" />
+    <PackageReference Include="CK.Testing.Engine.TypeScript" Version="4.0.0-0.uc.0.ci.11" />
+    <PackageReference Include="CK.AppIdentity.Hosting" Version="3.0.0-0.uc.0.ci.113" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Cris.Executor.Engine" Version="3.0.0-0.uc.0.ci.154" />
-    <PackageReference Include="CK.Cris.HttpSender" Version="3.0.0-0.uc.0.ci.154" />
+    <PackageReference Include="CK.Cris.Executor.Engine" Version="3.0.0-0.uc.0.ci.155" />
+    <PackageReference Include="CK.Cris.HttpSender" Version="3.0.0-0.uc.0.ci.155" />
     <!-- This project tests the session commands (the Basic login) and DelayedCommand. -->
-    <PackageReference Include="CK.Cris.Authentication.Basic" Version="3.0.0-0.uc.0.ci.154" />
-    <PackageReference Include="CK.Testing.Engine.Cris.Authentication" Version="3.0.0-0.uc.0.ci.154" />
-    <PackageReference Include="CK.Cris.DelayedCommand" Version="3.0.0-0.uc.0.ci.154" />
+    <PackageReference Include="CK.Cris.Authentication.Basic" Version="3.0.0-0.uc.0.ci.155" />
+    <PackageReference Include="CK.Testing.Engine.Cris.Authentication" Version="3.0.0-0.uc.0.ci.155" />
+    <PackageReference Include="CK.Cris.DelayedCommand" Version="3.0.0-0.uc.0.ci.155" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\CK.Cris.AspNet.Authentication\CK.Cris.AspNet.Authentication.csproj" />
