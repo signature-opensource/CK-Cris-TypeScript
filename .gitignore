@@ -275,3 +275,5 @@ CodeCakeBuilder/[Rr]eleases/
 
 # The install marker of the CK.TypeScript engine (it describes the local install).
 **/.yarn/ck-install-state
+# The stores of the test parties (CK.Testing.Engine.HttpEndpoint: one per test project).
+/Tests/*/TestStore/
