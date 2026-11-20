@@ -4,7 +4,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing.Engine.HttpEndpoint" Version="25.0.0-0.uc.0.ci.38" />
+    <PackageReference Include="CK.Testing.Engine.HttpEndpoint" Version="25.0.0-0.uc.0.ci.39" />
     <PackageReference Include="CK.Testing.Engine.TypeScript" Version="4.0.0-0.uc.0.ci.31" />
     <PackageReference Include="CK.Cris.Authentication.Basic" Version="3.0.0-0.uc.0.ci.178" />
     <PackageReference Include="CK.Cris.Authentication.Weak" Version="3.0.0-0.uc.0.ci.178" />
