@@ -10,7 +10,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.Testing.Engine" Version="37.0.0-0.uc.0.ci.31" />
-    <PackageReference Include="CK.Testing.Engine.HttpEndpoint" Version="25.0.0-0.uc.0.ci.30" />
+    <PackageReference Include="CK.Testing.Engine.HttpEndpoint" Version="25.0.0-0.uc.0.ci.32" />
     <PackageReference Include="CK.Testing.Engine.TypeScript" Version="4.0.0-0.uc.0.ci.25" />
     <PackageReference Include="CK.AppIdentity.Hosting" Version="3.0.0-0.uc.0.ci.140" />
   </ItemGroup>
