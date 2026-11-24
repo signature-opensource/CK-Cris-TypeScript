@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Description>The passkey (WebAuthn) buttons of CK.Ng.Cris.AspNet.Authentication: "Sign in with a passkey" in the login page, and "Add a passkey" for the current user.</Description>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Ng.Cris.AspNet.Authentication\CK.Ng.Cris.AspNet.Authentication.csproj" />

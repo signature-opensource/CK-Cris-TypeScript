@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Description>The Weak login form (a weak actor name, no password) of CK.Ng.Cris.AspNet.Authentication: it sends the IWeakLoginCommand.</Description>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CK.IO.Authentication.Weak" Version="3.0.0-0.uc.2.ci.117" />

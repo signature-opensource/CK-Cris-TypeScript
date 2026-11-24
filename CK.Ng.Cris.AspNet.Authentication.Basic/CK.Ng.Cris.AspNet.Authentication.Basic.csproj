@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Description>The Basic login form (user name and password) of CK.Ng.Cris.AspNet.Authentication: it sends the IBasicLoginCommand.</Description>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CK.IO.Authentication.Basic" Version="3.0.0-0.uc.2.ci.117" />

@@ -1,11 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <description>
-      This package extends the IPoco typescript code for ICommand Poco by adding their CommandModel.
-
-      The CK/Cris/Model.ts defines the CommandModel and ICrisEndpoint interfaces.
-    </description>
   </PropertyGroup>
   <!--
          The CK.TypeScript package contains few types: the TypeScriptTypeAttribute (with Folder, FileName,
