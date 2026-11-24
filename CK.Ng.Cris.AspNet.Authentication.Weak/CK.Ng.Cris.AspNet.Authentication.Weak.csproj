@@ -3,9 +3,9 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.IO.Authentication.Weak" Version="3.0.0-0.uc.2.ci.121" />
+    <PackageReference Include="CK.IO.Authentication.Weak" Version="3.0.0-0.uc.2.ci.122" />
     <!-- The endpoint that serves this form executes the Weak login (same origin). -->
-    <PackageReference Include="CK.Cris.Authentication.Weak" Version="3.0.0-0.uc.2.ci.200" />
+    <PackageReference Include="CK.Cris.Authentication.Weak" Version="3.0.0-0.uc.2.ci.201" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Ng.Cris.AspNet.Authentication\CK.Ng.Cris.AspNet.Authentication.csproj" />
