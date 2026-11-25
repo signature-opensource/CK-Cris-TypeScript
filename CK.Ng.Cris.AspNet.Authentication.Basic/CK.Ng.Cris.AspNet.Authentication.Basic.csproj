@@ -3,9 +3,9 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.IO.Authentication.Basic" Version="3.0.0-0.uc.3.ci.124" />
+    <PackageReference Include="CK.IO.Authentication.Basic" Version="3.0.0-0.uc.3.ci.125" />
     <!-- The endpoint that serves this form executes the Basic login (same origin). -->
-    <PackageReference Include="CK.Cris.Authentication.Basic" Version="3.0.0-0.uc.3.ci.207" />
+    <PackageReference Include="CK.Cris.Authentication.Basic" Version="3.0.0-0.uc.3.ci.208" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Ng.Cris.AspNet.Authentication\CK.Ng.Cris.AspNet.Authentication.csproj" />
