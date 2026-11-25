@@ -3,9 +3,9 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.IO.Authentication.Passkey" Version="3.0.0-0.uc.3.ci.126" />
+    <PackageReference Include="CK.IO.Authentication.Passkey" Version="3.0.0-0.uc.4" />
     <!-- The endpoint executes the passkey commands (the WebAuthn verification is the authentication center's). -->
-    <PackageReference Include="CK.Cris.Authentication.Passkey" Version="3.0.0-0.uc.3.ci.210" />
+    <PackageReference Include="CK.Cris.Authentication.Passkey" Version="3.0.0-0.uc.4" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Cris.AspNet.Authentication\CK.Cris.AspNet.Authentication.csproj" />
