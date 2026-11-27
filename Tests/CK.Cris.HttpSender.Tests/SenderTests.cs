@@ -46,7 +46,10 @@ public class SenderTests
                                                           typeof( CommonPocoJsonSupport ),
                                                           typeof( ApplicationIdentityService ),
                                                           typeof( PartyComponentDirectory ),
-                                                          typeof( CrisHttpSenderFeatureDriver ) );
+                                                          typeof( CrisHttpSenderFeatureDriver ),
+                                                          // The options of the feature: "Retry".
+                                                          typeof( PartyComponentOptionDirectory ),
+                                                          typeof( CrisHttpSenderRetryOption ) );
 
         var callerMap = (await callerEngineConfiguration.RunSuccessfullyAsync()).LoadMap();
         using var runningCaller = await LocalHelper.CreateRunningCallerAsync( callerMap, serverAddress );
@@ -203,7 +206,10 @@ public class SenderTests
                                                           typeof( ApplicationIdentityService ),
                                                           typeof( PartyComponentDirectory ),
                                                           typeof( ApplicationIdentityServiceConfiguration ),
-                                                          typeof( CrisHttpSenderFeatureDriver ) );
+                                                          typeof( CrisHttpSenderFeatureDriver ),
+                                                          // The options of the feature: "Retry".
+                                                          typeof( PartyComponentOptionDirectory ),
+                                                          typeof( CrisHttpSenderRetryOption ) );
         var map = (await callerEngineConfiguration.RunSuccessfullyAsync()).LoadMap();
 
         // The serverAddress http://[::1]:65036/ has no running server.

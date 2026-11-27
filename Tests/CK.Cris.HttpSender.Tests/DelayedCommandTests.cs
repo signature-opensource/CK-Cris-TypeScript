@@ -102,7 +102,10 @@ public class DelayedCommandTests
                                            typeof( CommonPocoJsonSupport ),
                                            typeof( ApplicationIdentityService ),
                                            typeof( PartyComponentDirectory ),
-                                           typeof( CrisHttpSenderFeatureDriver ) );
+                                           typeof( CrisHttpSenderFeatureDriver ),
+                                                          // The options of the feature: "Retry".
+                                                          typeof( PartyComponentOptionDirectory ),
+                                                          typeof( CrisHttpSenderRetryOption ) );
         _callerMap = (await callerConf.RunSuccessfullyAsync()).LoadMap();
     }
 
