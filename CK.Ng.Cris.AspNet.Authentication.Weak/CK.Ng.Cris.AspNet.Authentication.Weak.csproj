@@ -5,7 +5,7 @@
   <ItemGroup>
     <PackageReference Include="CK.IO.Authentication.Weak" Version="3.0.0-0.uc.4.ci.130" />
     <!-- The endpoint that serves this form executes the Weak login (same origin). -->
-    <PackageReference Include="CK.Cris.Authentication.Weak" Version="3.0.0-0.uc.4.ci.214" />
+    <PackageReference Include="CK.Cris.Authentication.Weak" Version="3.0.0-0.uc.4.ci.215" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Ng.Cris.AspNet.Authentication\CK.Ng.Cris.AspNet.Authentication.csproj" />
